@@ -2,7 +2,7 @@
 #include "configurations.h"
 #include "Platform/Utils/st_hardware.h"
 #include <tim.h>
-
+#include "usart.h"
 
 /* Component Definitions -----------------------------------------------------*/
 BoardConfig_t boardConfig;
@@ -35,7 +35,7 @@ void Main()
     {
         boardConfig = BoardConfig_t{
             .configStatus = CONFIG_OK,
-//            .canNodeId = defaultNodeID,
+            .canNodeId = 0,
             .encoderHomeOffset = 0,
             .defaultMode = Motor::MODE_COMMAND_POSITION,
             .currentLimit = 1 * 1000,    // A
@@ -55,7 +55,7 @@ void Main()
     }
     boardConfig.enableTempWatch=false;
     //depends on 3 bits switch now
-    boardConfig.canNodeId = defaultNodeID;
+    // boardConfig.canNodeId = defaultNodeID;
     motor.config.motionParams.encoderHomeOffset = boardConfig.encoderHomeOffset;
     motor.config.motionParams.ratedCurrent = boardConfig.currentLimit;
     motor.config.motionParams.ratedVelocity = boardConfig.velocityLimit;
@@ -166,11 +166,7 @@ void OnButton1Event(Button::Event _event)
         case ButtonBase::DOWN:
             break;
         case ButtonBase::LONG_PRESS:
-            encoderCalibrator.isTriggered = true;
-            encoderCalibrator.Tick20kHz();
-            encoderCalibrator.TickMainLoop();
-//            HAL_NVIC_SystemReset();
-//            encoderCalibrator.TestFlash();
+            boardConfig.configStatus = CONFIG_RESTORE;
             break;
         case ButtonBase::CLICK:
             printf("KEY1\r\n");

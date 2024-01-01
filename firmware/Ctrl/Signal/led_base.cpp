@@ -43,7 +43,7 @@ void LedBase::Tick(uint32_t _timeElapseMillis, Motor::State_t _state)
             break;
     }
 
-    if (motorEnable)
+    if (motorEnable){
         if (heartBeatEnable)
         {
             switch (heartBeatPhase)
@@ -86,8 +86,34 @@ void LedBase::Tick(uint32_t _timeElapseMillis, Motor::State_t _state)
             SetLedState(0, true);
             heartBeatPhase = 1;
         }
-    else
-        SetLedState(0, false);
+    }
+    else{
+        switch (heartBeatPhase)
+        {
+            case 1:
+                if (timer - timerHeartBeat > 0)
+                {
+                    SetLedState(0, false);
+                    heartBeatPhase = 2;
+                }
+                break;
+            case 2:
+                if (timer - timerHeartBeat > 990)
+                {
+                    SetLedState(0, true);
+                    heartBeatPhase = 3;
+                }
+                break;
+            case 3:
+                if (timer - timerHeartBeat > 1000)
+                {
+                    timerHeartBeat = timer;
+                    heartBeatPhase = 1;
+                }
+                break;
+            default:timerHeartBeat = timer;heartBeatPhase = 1;
+        }
+    }
 
 
     switch (blinkPhase)

@@ -10,7 +10,7 @@ void TB67H450::InitGpio()
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure Signal pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, HW_ELEC_BM_Pin | HW_ELEC_BP_Pin | HW_ELEC_AM_Pin | HW_ELEC_AP_Pin,
+    HAL_GPIO_WritePin(HW_ELEC_BM_GPIO_Port, HW_ELEC_BM_Pin | HW_ELEC_BP_Pin | HW_ELEC_AM_Pin | HW_ELEC_AP_Pin,
                       GPIO_PIN_RESET);
 
     /*Configure Signal pins : PAPin PAPin PAPin PAPin */
@@ -18,7 +18,7 @@ void TB67H450::InitGpio()
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(HW_ELEC_BM_GPIO_Port, &GPIO_InitStruct);
 }
 
 
@@ -30,20 +30,20 @@ void TB67H450::InitPwm()
 
 void TB67H450::DacOutputVoltage(uint16_t _voltageA_3300mVIn12bits, uint16_t _voltageB_3300mVIn12bits)
 {
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, _voltageA_3300mVIn12bits >> 2);
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, _voltageB_3300mVIn12bits >> 2);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, _voltageA_3300mVIn12bits >> 2);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, _voltageB_3300mVIn12bits >> 2);
 }
 
 
 void TB67H450::SetInputA(bool _statusAp, bool _statusAm)
 {
-    _statusAp ? (GPIOA->BSRR = GPIO_PIN_5) : (GPIOA->BRR = GPIO_PIN_5);
-    _statusAm ? (GPIOA->BSRR = GPIO_PIN_4) : (GPIOA->BRR = GPIO_PIN_4);
+    _statusAp ? (GPIOA->BSRR = HW_ELEC_AP_Pin) : (GPIOA->BRR = HW_ELEC_AP_Pin);
+    _statusAm ? (GPIOA->BSRR = HW_ELEC_AM_Pin) : (GPIOA->BRR = HW_ELEC_AM_Pin);
 }
 
 
 void TB67H450::SetInputB(bool _statusBp, bool _statusBm)
 {
-    _statusBp ? (GPIOA->BSRR = GPIO_PIN_3) : (GPIOA->BRR = GPIO_PIN_3);
-    _statusBm ? (GPIOA->BSRR = GPIO_PIN_2) : (GPIOA->BRR = GPIO_PIN_2);
+    _statusBp ? (GPIOA->BSRR = HW_ELEC_BP_Pin) : (GPIOA->BRR = HW_ELEC_BP_Pin);
+    _statusBm ? (GPIOA->BSRR = HW_ELEC_BM_Pin) : (GPIOA->BRR = HW_ELEC_BM_Pin);
 }

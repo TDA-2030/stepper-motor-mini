@@ -1,0 +1,4 @@
+h
+loadfile "Ctrl-Step-STM32-fw.hex" 0x8000000
+r
+q

@@ -88,3 +88,8 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
         COMMENT "Building ${HEX_FILE}
 Building ${BIN_FILE}")
+
+add_custom_target(flash 
+    COMMAND "D:/MySoftware/JLink_V794/JLink.exe" -device STM32F103CB  -speed 2000 -if SWD -CommanderScript ${CMAKE_CURRENT_LIST_DIR}/jlink-flash-fw-standalone.jlink
+    DEPENDS ${PROJECT_NAME}.elf
+)

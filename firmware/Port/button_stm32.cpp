@@ -6,9 +6,9 @@ bool Button::ReadButtonPinIO(uint8_t _id)
     switch (_id)
     {
         case 1:
-            return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12) == GPIO_PIN_SET;
+            return HAL_GPIO_ReadPin(BUTTON1_GPIO_Port, BUTTON1_Pin) == GPIO_PIN_SET;
         case 2:
-            return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2) == GPIO_PIN_SET;
+            return HAL_GPIO_ReadPin(BUTTON2_GPIO_Port, BUTTON2_Pin) == GPIO_PIN_SET;
         default:
             return false;
     }

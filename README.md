@@ -1,16 +1,19 @@
-# Simple VESC
+# Simple Stepper Motor
 
-A very simple and low-cost  motor controller based on [VESC 6](https://vesc-project.com/sites/default/files/Benjamin%20Posts/VESC_6.pdf)
+A very simple and low-cost  motor controller based on [dummy robot](https://gitee.com/switchpi/dummy)
 
-## Feature
 
-- Replace DRV8301 with cheaper chips
 
-- Double layer PCB board
+## How to build
 
-- All components are placed on the same side
+build on Windows
 
-- Fewer connectors and USB Type-C
+1. Download toolchain from https://github.com/xpack-dev-tools/arm-none-eabi-gcc-xpack/releases and unzip it.
+2. run follow command to build
+    ```shell
+    mkdir build
+    cmake -G "MinGW Makefiles" ..
+    ```
 
 
 
