@@ -1,0 +1,170 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr User 8496 6906
+encoding utf-8
+Sheet 4 4
+Title "Simple-VESC"
+Date "2022-01-14"
+Rev "1.1"
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L crf_1:GND #PWR042
+U 1 1 5C8FFFEC
+P 3700 3850
+F 0 "#PWR042" H 3700 3850 30  0001 C CNN
+F 1 "GND" H 3700 3780 30  0001 C CNN
+F 2 "" H 3700 3850 60  0000 C CNN
+F 3 "" H 3700 3850 60  0000 C CNN
+	1    3700 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L crf_1:RES R18
+U 1 1 5C8FFFF0
+P 4650 3250
+F 0 "R18" V 4730 3250 40  0000 C CNN
+F 1 "120R" V 4657 3251 40  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 4580 3250 30  0001 C CNN
+F 3 "" H 4650 3250 30  0000 C CNN
+	1    4650 3250
+	-1   0    0    -1  
+$EndComp
+Text HLabel 5650 3100 2    60   BiDi ~ 0
+RS485_A
+Text HLabel 5650 3500 2    60   BiDi ~ 0
+RS485_B
+Wire Wire Line
+	4300 3400 4100 3400
+Wire Wire Line
+	4100 3200 4300 3200
+Wire Wire Line
+	4000 2450 3700 2450
+Connection ~ 3700 2450
+Wire Wire Line
+	3700 2450 3700 2900
+$Comp
+L crf_1:GND #PWR043
+U 1 1 53F59FB0
+P 4000 2850
+F 0 "#PWR043" H 4000 2850 30  0001 C CNN
+F 1 "GND" H 4000 2780 30  0001 C CNN
+F 2 "" H 4000 2850 60  0000 C CNN
+F 3 "" H 4000 2850 60  0000 C CNN
+	1    4000 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L crf_1:CAP C29
+U 1 1 5C8FFFEE
+P 4000 2650
+F 0 "C29" H 4000 2750 40  0000 L CNN
+F 1 "100n" H 4006 2565 40  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 4038 2500 30  0001 C CNN
+F 3 "" H 4000 2650 60  0000 C CNN
+	1    4000 2650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3700 2300 3700 2450
+$Comp
+L power:VCC #PWR?
+U 1 1 5DB449BE
+P 3700 2300
+AR Path="/53FFB3E2/5DB449BE" Ref="#PWR?"  Part="1" 
+AR Path="/53FFB6E1/5DB449BE" Ref="#PWR?"  Part="1" 
+AR Path="/65B0E93B/5DB449BE" Ref="#PWR041"  Part="1" 
+F 0 "#PWR041" H 3700 2400 30  0001 C CNN
+F 1 "VCC" V 3750 2400 30  0000 C CNN
+F 2 "" H 3700 2300 60  0000 C CNN
+F 3 "" H 3700 2300 60  0000 C CNN
+	1    3700 2300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3700 3700 3700 3800
+Wire Wire Line
+	5650 3500 5050 3500
+Wire Wire Line
+	4300 3500 4300 3400
+Connection ~ 4650 3500
+Wire Wire Line
+	4650 3500 4300 3500
+Wire Wire Line
+	5650 3100 5050 3100
+Wire Wire Line
+	4800 3100 4800 3000
+Wire Wire Line
+	4800 3000 4650 3000
+Wire Wire Line
+	4650 3000 4300 3000
+Wire Wire Line
+	4300 3000 4300 3200
+Connection ~ 4650 3000
+Text HLabel 3300 3500 0    60   Output ~ 0
+RS485_RX
+Text HLabel 3300 3100 0    60   Input ~ 0
+RS485_TX
+$Comp
+L Interface_UART:SP3485EP U6
+U 1 1 65B02B51
+P 3700 3300
+F 0 "U6" H 3700 3881 50  0000 C CNN
+F 1 "SP3485EP" H 3700 3790 50  0000 C CNN
+F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 3700 3300 50  0001 C CIN
+F 3 "http://www.icbase.com/pdf/SPX/SPX00480106.pdf" H 3700 3300 50  0001 C CNN
+	1    3700 3300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3300 3200 3300 3400
+$Comp
+L crf_1:RES R19
+U 1 1 65B05270
+P 5050 2850
+F 0 "R19" V 5130 2850 40  0000 C CNN
+F 1 "360R" V 5057 2851 40  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 2850 30  0001 C CNN
+F 3 "" H 5050 2850 30  0000 C CNN
+	1    5050 2850
+	-1   0    0    -1  
+$EndComp
+Connection ~ 5050 3100
+Wire Wire Line
+	5050 3100 4800 3100
+$Comp
+L crf_1:RES R20
+U 1 1 65B05DF0
+P 5050 3750
+F 0 "R20" V 5130 3750 40  0000 C CNN
+F 1 "360R" V 5057 3751 40  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 3750 30  0001 C CNN
+F 3 "" H 5050 3750 30  0000 C CNN
+	1    5050 3750
+	-1   0    0    -1  
+$EndComp
+Connection ~ 5050 3500
+Wire Wire Line
+	5050 3500 4650 3500
+Wire Wire Line
+	4000 2450 5050 2450
+Wire Wire Line
+	5050 2450 5050 2600
+Connection ~ 4000 2450
+Wire Wire Line
+	3700 3800 4850 3800
+Wire Wire Line
+	4850 3800 4850 4000
+Wire Wire Line
+	4850 4000 5050 4000
+Connection ~ 3700 3800
+Wire Wire Line
+	3700 3800 3700 3850
+Text HLabel 3300 3400 0    60   Input ~ 0
+RS485_RE
+$EndSCHEMATC

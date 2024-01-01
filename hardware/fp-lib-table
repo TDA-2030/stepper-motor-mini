@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name crf1)(type KiCad)(uri ${KIPRJMOD}/Libraries/crf1.pretty)(options "")(descr ""))
+  (lib (name myp)(type KiCad)(uri ${KIPRJMOD}/Libraries/myp.pretty)(options "")(descr ""))
+  (lib (name w_conn_jst-ph)(type KiCad)(uri ${KIPRJMOD}/Libraries/w_conn_jst-ph.pretty)(options "")(descr ""))
+)
