@@ -1,5 +1,7 @@
 #include "common_inc.h"
 #include "configurations.h"
+
+#ifndef GD32F130_150
 #include <can.h>
 
 
@@ -257,3 +259,4 @@ void OnCanCmd(uint8_t _cmd, uint8_t* _data, uint32_t _len)
 
 }
 
+#endif

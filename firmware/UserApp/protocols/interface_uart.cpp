@@ -1,6 +1,7 @@
 #include <string.h>
 #include "common_inc.h"
 #include "configurations.h"
+#include "Platform/utils.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -12,16 +13,25 @@ static uint8_t g_tx_buffer[8];
 
 static void UartCAN_Send(uint8_t id, uint8_t *data)
 {
-    HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, GPIO_PIN_SET);
     memcpy(g_tx_buffer, data, 7);
     g_tx_buffer[7] = 0x6b;
+#ifdef GD32F130_150
+    gpio_rs485_enable_send(true);
+    uart_send_dma(g_tx_buffer, 8);
+#elif defined(STM32F103xB)
+    HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, GPIO_PIN_SET);
     HAL_UART_Transmit_DMA(&huart1, g_tx_buffer, 8);
+#endif
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
+#ifdef GD32F130_150
+    gpio_rs485_enable_send(false);
+#elif defined(STM32F103xB)
     UNUSED(huart);
     HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, GPIO_PIN_RESET);
+#endif
 }
 
 void OnUartCmd(uint8_t* _data, uint16_t _len)
@@ -71,7 +81,7 @@ void OnUartCmd(uint8_t* _data, uint16_t _len)
             }
             motor.controller->SetPositionSetPoint(
                 (int32_t) (*(float*) _data * (float) motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS));
-            printf("SET MOTOR[0x05] POSITION[]\r\n");
+            // printf("SET MOTOR[0x05] POSITION[]\r\n");
             if (_data[4]) // Need Position & Finished ACK
             {
                 tmpF = motor.controller->GetPosition();
@@ -89,7 +99,7 @@ void OnUartCmd(uint8_t* _data, uint16_t _len)
             motor.controller->SetPositionSetPointWithTime(
                 (int32_t) (*(float*) _data * (float) motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS),
                 *(float*) (_data + 4));
-            if (_data[4]) // Need Position & Finished ACK
+            if (_data[8]) // Need Position & Finished ACK
             {
                 tmpF = motor.controller->GetPosition();
                 auto* b = (unsigned char*) &tmpF;
@@ -259,7 +269,7 @@ void OnUartCmd(uint8_t* _data, uint16_t _len)
             break;
 
         case 0x7d:  // enable motor temperature watch
-            boardConfig.enableTempWatch = true;
+            boardConfig.enableTempWatch = (*(uint32_t*) (_data) == 1);
             break;
         case 0x7e:  // Erase Configs
             boardConfig.configStatus = CONFIG_RESTORE;

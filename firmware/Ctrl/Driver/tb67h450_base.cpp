@@ -16,7 +16,8 @@ void TB67H450Base::SetFocCurrentVector(uint32_t _directionInCount, int32_t _curr
     phaseB.sinMapData = sin_pi_m2[phaseB.sinMapPtr];
 
     uint32_t dac_reg = abs(_current_mA);
-    dac_reg = (uint32_t) (dac_reg * 5083) >> 12;
+    uint32_t Vref = (10 * R_shunt_milliohm * dac_reg) / 1000;
+    dac_reg = Vref * 4096 / 3300;
     dac_reg = dac_reg & (0x00000FFF);
     phaseA.dacValue12Bits =
         (uint32_t) (dac_reg * abs(phaseA.sinMapData)) >> sin_pi_m2_dpiybit;

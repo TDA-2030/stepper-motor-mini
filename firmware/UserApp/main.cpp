@@ -1,8 +1,13 @@
 #include "common_inc.h"
+#include "Platform\Memory\eeprom_interface.h"
 #include "configurations.h"
-#include "Platform/Utils/st_hardware.h"
-#include <tim.h>
+#include "Platform/utils.h"
+#include "tim.h"
 #include "usart.h"
+
+#ifdef GD32F130_150
+#include "systick.h"
+#endif
 
 /* Component Definitions -----------------------------------------------------*/
 BoardConfig_t boardConfig;
@@ -14,18 +19,37 @@ Button button1(1, 1000), button2(2, 3000);
 void OnButton1Event(Button::Event _event);
 void OnButton2Event(Button::Event _event);
 Led statusLed;
+
+static void led_show_id(uint16_t id)
+{
+    for (size_t i = 0; i < 2; i++) {
+        statusLed.Status(0, true);
+        statusLed.Status(1, true);
+        HAL_Delay(80);
+        statusLed.Status(0, false);
+        statusLed.Status(1, false);
+        HAL_Delay(80);
+    }
+    HAL_Delay(200);
+
+    for (size_t i = 0; i < id; i++) {
+        statusLed.Status(1, true);
+        HAL_Delay(150);
+        statusLed.Status(1, false);
+        HAL_Delay(150);
+    }
+    statusLed.Status(0, true);
+    statusLed.Status(1, true);
+    HAL_Delay(400);
+    statusLed.Status(0, false);
+    statusLed.Status(1, false);
+}
+
 /* Main Entry ----------------------------------------------------------------*/
-void Main()
+extern "C" void Main()
 {
     uint64_t serialNum = GetSerialNumber();
     uint16_t defaultNodeID = 0;
-    //ID0 is PA8 -->  Switch 4
-    //ID1 is PA9 -->  Switch 3
-    //ID2 is PA10 --> Switch 2
-    uint16_t nodeID = !HAL_GPIO_ReadPin(GPIOA, ID0_Pin);
-    nodeID |= !HAL_GPIO_ReadPin(GPIOA, ID1_Pin) << 1;
-    nodeID |= !HAL_GPIO_ReadPin(GPIOA, ID2_Pin) << 2;
-    defaultNodeID = nodeID;
 
     /*---------- Apply EEPROM Settings ----------*/
     // Setting priority is EEPROM > Motor.h
@@ -53,6 +77,7 @@ void Main()
         };
         eeprom.put(0, boardConfig);
     }
+    led_show_id(boardConfig.canNodeId);
     boardConfig.enableTempWatch=false;
     //depends on 3 bits switch now
     // boardConfig.canNodeId = defaultNodeID;
@@ -90,10 +115,15 @@ void Main()
 
     /*------- Start Close-Loop Control Tick ------*/
     HAL_Delay(100);
+#ifdef GD32F130_150
+    timer1_start();  // 100Hz
+    timer13_start();  // 20kHz
+#elif defined(STM32F103xB)
     HAL_TIM_Base_Start_IT(&htim1);  // 100Hz
     HAL_TIM_Base_Start_IT(&htim4);  // 20kHz
+#endif
 
-    if (button1.IsPressed() && button2.IsPressed())
+    if (button1.IsPressed())
         encoderCalibrator.isTriggered = true;
 //    printf("start motor %d\r\n", defaultNodeID);
 
@@ -109,7 +139,7 @@ void Main()
         } else if (boardConfig.configStatus == CONFIG_RESTORE)
         {
             eeprom.put(0, boardConfig);
-            HAL_NVIC_SystemReset();
+            NVIC_SystemReset();
         }
     }
 }
@@ -120,7 +150,6 @@ void Main()
 uint32_t count;
 extern "C" void Tim1Callback100Hz()
 {
-    __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
 
     button1.Tick(10);
     button2.Tick(10);
@@ -148,7 +177,7 @@ extern "C" void Tim1Callback100Hz()
 
 extern "C" void Tim4Callback20kHz()
 {
-    __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
+    
 
     if (encoderCalibrator.isTriggered)
         encoderCalibrator.Tick20kHz();

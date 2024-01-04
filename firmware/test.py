@@ -2,6 +2,7 @@ from serial import Serial, serialutil
 from serial.threaded import ReaderThread, Protocol,Packetizer
 import time
 from queue import Queue, Empty
+import struct
 
 class SerialReaderProtocolRaw(Packetizer):
 
@@ -59,7 +60,9 @@ class COM:
                 return data
             except Empty:
                 print("command no ack")
-import struct
+        else:
+            time.sleep(0.02)
+
 
 class Motor():
 
@@ -75,7 +78,11 @@ class Motor():
     @staticmethod
     def bytesToFloat(ba:bytearray):
         return struct.unpack("<f",ba)[0]
-    
+
+    def enable_motor(self, enable:bool):
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x01" + enable.to_bytes(1, "little")
+        self.com.send_cmd(cmd, wait_sec=0)
+
     def calibration(self):
         cmd = self.node_id.to_bytes(1, 'little') + b"\x02"
         self.com.send_cmd(cmd, wait_sec=0)
@@ -89,10 +96,31 @@ class Motor():
         self.com.send_cmd(cmd, wait_sec=0)
 
     def set_position(self, angle: float):
-        print(angle)
-        step=angle/360
+        """
+        angel: 圈数
+        """
+        step=angle
         cmd = self.node_id.to_bytes(1, 'little') + b"\x05" + self.floatToBytes(step) + b"\x00"
         self.com.send_cmd(cmd, wait_sec=0)
+
+    def set_position_with_time(self, angle: float, _time: float):
+        """
+        angel: 圈数
+        _time: 运行时间
+        """
+        step=angle
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x06" + self.floatToBytes(step) + self.floatToBytes(_time) + b"\x00"
+        self.com.send_cmd(cmd, wait_sec=0)
+
+    def set_position_with_velocity(self, angle: float, _vel:float):
+        """
+        angel: 圈数
+        _vel: 每秒转数
+        """
+        step=angle
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x07" + self.floatToBytes(step) + self.floatToBytes(_vel) + b"\x00"
+        d = self.com.send_cmd(cmd, wait_sec=0.5)
+        return self.bytesToFloat(d[:4])
 
     def get_FocCurrent(self):
         cmd = self.node_id.to_bytes(1, 'little') + b"\x21"
@@ -113,12 +141,30 @@ class Motor():
         d = self.com.send_cmd(cmd, wait_sec=0.3)
         return self.bytesToFloat(d[:4])
 
-    def set_node_id(self, id:int, save:bool):
+    def set_node_id(self, id:int, save:bool=False):
         cmd = self.node_id.to_bytes(1, 'little') + b"\x11" + id.to_bytes(4, "little") + save.to_bytes(1, "little")
         self.com.send_cmd(cmd, wait_sec=0)
 
-    def enable_temperature(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x7d"
+    def set_rated_current(self, current_A:float, save:bool=False):
+        """
+        current_A: 电流（安培）
+        """
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x12" + self.floatToBytes(current_A) + save.to_bytes(1, "little")
+        self.com.send_cmd(cmd, wait_sec=0)
+
+    def set_rated_velocity(self, velocity:float, save:bool=False):
+        """
+        velocity: 每秒转数
+        """
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x13" + self.floatToBytes(velocity) + save.to_bytes(1, "little")
+        self.com.send_cmd(cmd, wait_sec=0)
+
+    def enable_temperature(self, enable:bool):
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x7d" + enable.to_bytes(1, "little")
+        self.com.send_cmd(cmd, wait_sec=0)
+
+    def erase_configs(self):
+        cmd = self.node_id.to_bytes(1, 'little') + b"\x7e"
         self.com.send_cmd(cmd, wait_sec=0)
 
 
@@ -130,17 +176,28 @@ if __name__ == "__main__":
   
     print("========run")
     # motor.set_node_id(10, False)
-    time.sleep(0.3)
-    ret=motor.get_position()
-    print(ret)
+    motor.enable_temperature(True)
+    # motor.calibration()
+    # exit()
+    print(f"temp={motor.get_temperature()}")
+    print(f"foc current={motor.get_FocCurrent()}")
+    print(f"position={motor.get_position()}")
+    print(f"velocity={motor.get_velocity()}")
+    motor.set_rated_current(1)
+    motor.set_rated_velocity(40)
+    # motor.set_position(0)
+    # motor.erase_configs()
     # exit()
     try:
         while True:
-            motor.set_position(360)
-            time.sleep(0.3)
-            motor.set_position(0)
-            time.sleep(0.3)
+            r = motor.set_position_with_velocity(2, 10)
+            print(r)
+            time.sleep(0.8)
+            r = motor.set_position_with_velocity(0, 10)
+            print(r)
+            time.sleep(0.8)
     except KeyboardInterrupt as e:
-        pass
+        motor.enable_motor(False)
+        motor.enable_temperature(False)
 
     com.close()

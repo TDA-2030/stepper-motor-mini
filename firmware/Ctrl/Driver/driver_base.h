@@ -22,6 +22,7 @@ public:
 
 
 protected:
+    uint32_t R_shunt_milliohm = 100;
     // Used to composite the FOC current vector
     virtual void SetTwoCoilsCurrent(uint16_t _currentA_mA, uint16_t _currentB_mA) = 0;
 

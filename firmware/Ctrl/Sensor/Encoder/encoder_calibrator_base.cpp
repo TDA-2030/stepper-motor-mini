@@ -1,7 +1,8 @@
-#include <Platform/Memory/stockpile_f103cb.h>
+#include <Platform/Memory/stockpile.h>
 #include <valarray>
 #include "encoder_calibrator_base.h"
 #include "common_inc.h"
+#include "Platform/utils.h"
 
 
 int32_t EncoderCalibratorBase::CycleDataAverage(const uint16_t* _data, uint16_t _length, int32_t _cyc)
