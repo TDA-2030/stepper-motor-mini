@@ -25,6 +25,7 @@ typedef struct
 
 extern uint8_t g_rx_buffer[UART_TR_BUFFER_SIZE];
 extern void (*OnRecvEnd)(uint8_t *data, uint16_t len);
+void uart_config(void);
 void Uart_SetRxCpltCallBack(void(*xerc)(uint8_t *, uint16_t));
 void uart_send_dma(const uint8_t *data, uint32_t len);
 

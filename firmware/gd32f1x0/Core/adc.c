@@ -2,6 +2,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "adc.h"
 #include "math.h"
+#include "systick.h"
 
 uint16_t whole_adc_data[2][12];
 

@@ -12,6 +12,9 @@
     \brief main function
 */
 int main(void) {
+    
+    /* configure systick timer for delay_ms() function */
+    systick_config();
     /* 4 bits for preemption priority 0 bits for subpriority */
     nvic_priority_group_set(NVIC_PRIGROUP_PRE4_SUB0);
 
@@ -23,9 +26,6 @@ int main(void) {
     timer13_config();
     pwm_timer2_config();
     spi_config();
-
-    /* configure systick timer for delay_ms() function */
-    systick_config();
 
     Main();
 

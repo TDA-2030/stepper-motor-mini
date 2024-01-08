@@ -19,7 +19,7 @@ set(CMAKE_C_STANDARD 11)
 
 # add_compile_options(-mfloat-abi=soft)
 add_compile_options(-mcpu=cortex-m3 -mthumb -mthumb-interwork )
-add_compile_options(-ffunction-sections -fdata-sections -fno-common -fmessage-length=0 -fno-exceptions)
+add_compile_options(-ffast-math -ffunction-sections -fdata-sections -fno-common -fmessage-length=0 -fno-exceptions)
 # add_compile_options(-O2)
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fno-rtti )
@@ -43,9 +43,9 @@ set(FIRMWARE_DIR ${CMAKE_SOURCE_DIR}/..)
 include_directories(
         system  
         algorithm 
-        GD32F1x0_Firmware_Library_V3.4.0/GD32F1x0_standard_peripheral/Include
-        GD32F1x0_Firmware_Library_V3.4.0/CMSIS/GD/GD32F1x0/Include
-        GD32F1x0_Firmware_Library_V3.4.0/CMSIS
+        GD32F1x0_firmware/GD32F1x0_standard_peripheral/Include
+        GD32F1x0_firmware/CMSIS/GD/GD32F1x0/Include
+        GD32F1x0_firmware/CMSIS
         Core
         ${FIRMWARE_DIR}/Ctrl
         ${FIRMWARE_DIR}/Ctrl/Sensor
@@ -59,19 +59,20 @@ include_directories(
 add_definitions(-DUSE_STDPERIPH_DRIVER -DGD32F130_150)
 
 file(GLOB_RECURSE SOURCES 
-"GD32F1x0_Firmware_Library_V3.4.0/GD32F1x0_standard_peripheral/Source/*.c"
+"GD32F1x0_firmware/GD32F1x0_standard_peripheral/Source/*.c"
+"GD32F1x0_firmware/CMSIS/GD/GD32F1x0/Source/*.c"
 "system/*.c" 
-"system/startup_gd32f130.s" 
+"system/startup_gd32f1x0.s" 
 "${FIRMWARE_DIR}/Ctrl/*.*"
 "Core/*.c"
 "${FIRMWARE_DIR}/UserApp/*.*"
 "Port/*.*"
 )
 
-set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/system/gd32f130g8u6.ld)
+set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/system/gd32f150g8u6.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
-add_link_options(-mcpu=cortex-m3 -mthumb -mthumb-interwork)
+add_link_options(-mcpu=cortex-m3 -mthumb -mthumb-interwork --specs=nosys.specs)
 add_link_options(-T ${LINKER_SCRIPT})
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
@@ -83,6 +84,6 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
 Building ${BIN_FILE}")
 
 add_custom_target(flash 
-COMMAND "D:/MySoftware/JLink_V794/JLink.exe" -device STM32F103CB  -speed 2000 -if SWD -CommanderScript ${CMAKE_CURRENT_LIST_DIR}/jlink-flash-fw-standalone.jlink
+COMMAND "D:/MySoftware/JLink_V794/JLink.exe" -device GD32F130G8  -speed 2000 -if SWD -CommanderScript ${CMAKE_CURRENT_LIST_DIR}/jlink-flash-fw-standalone.jlink
 DEPENDS ${PROJECT_NAME}.elf
 )

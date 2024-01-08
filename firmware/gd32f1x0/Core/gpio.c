@@ -2,6 +2,9 @@
 
 void gpio_config()
 {
+    rcu_periph_clock_enable(RCU_GPIOA);
+    rcu_periph_clock_enable(RCU_GPIOB);
+
     gpio_mode_set(LED1_GPIO_Port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED1_Pin | LED2_Pin);
     gpio_output_options_set(LED1_GPIO_Port, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, LED1_Pin | LED2_Pin);
     gpio_bit_set(LED1_GPIO_Port, LED1_Pin | LED2_Pin);

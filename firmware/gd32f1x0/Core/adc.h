@@ -9,7 +9,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-
+void adc_config(void);
 float AdcGetChipTemperature();
 
 extern uint16_t whole_adc_data[2][12];
