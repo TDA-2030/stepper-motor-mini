@@ -4,7 +4,7 @@
 #include "math.h"
 #include "systick.h"
 
-uint16_t whole_adc_data[2][12];
+static uint16_t whole_adc_data[2];
 
 /*!
     \brief      configure the DMA peripheral
@@ -18,7 +18,7 @@ static void dma_config(void)
     dma_parameter_struct dma_data_parameter;
     /* ADC DMA_channel configuration */
     dma_deinit(DMA_CH0);
-    
+
     /* initialize DMA single data mode */
     dma_data_parameter.periph_addr  = (uint32_t)(&ADC_RDATA);
     dma_data_parameter.periph_inc   = DMA_PERIPH_INCREASE_DISABLE;
@@ -44,9 +44,15 @@ static void dma_config(void)
 */
 void adc_config(void)
 {
+    rcu_periph_clock_enable(RCU_DMA);
+    rcu_periph_clock_enable(RCU_ADC);
+    rcu_periph_clock_enable(RCU_GPIOA);
+
     dma_config();
 
-    gpio_mode_set(GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_PIN_0|GPIO_PIN_1);
+    rcu_adc_clock_config(RCU_ADCCK_APB2_DIV6);
+
+    gpio_mode_set(GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_PIN_0 | GPIO_PIN_1);
 
     /* ADC continuous function enable */
     adc_special_function_config(ADC_CONTINUOUS_MODE, ENABLE);
@@ -58,10 +64,10 @@ void adc_config(void)
     /* ADC channel length config */
     adc_channel_length_config(ADC_REGULAR_CHANNEL, 2);
 
-    /* ADC regular channel config */ 
-    adc_regular_channel_config(0, ADC_CHANNEL_1, ADC_SAMPLETIME_239POINT5);
-    adc_regular_channel_config(1, ADC_CHANNEL_2, ADC_SAMPLETIME_239POINT5);
-    
+    /* ADC regular channel config */
+    adc_regular_channel_config(0, ADC_CHANNEL_0, ADC_SAMPLETIME_239POINT5);
+    adc_regular_channel_config(1, ADC_CHANNEL_1, ADC_SAMPLETIME_239POINT5);
+
     /* ADC trigger config */
     adc_external_trigger_source_config(ADC_REGULAR_CHANNEL, ADC_EXTTRIG_REGULAR_NONE);
     adc_external_trigger_config(ADC_REGULAR_CHANNEL, ENABLE);
@@ -79,8 +85,7 @@ void adc_config(void)
 }
 
 
-#define TEMP_GROUP 0
-#define TEMP_TEMP_DATA 1
+#define TEMP_GROUP 1
 const float BALANCE_RESISTOR   = 3300.0;
 // This helps calculate the thermistor's resistance (check article for details).
 const float MAX_ADC            = 4095.0;
@@ -102,7 +107,7 @@ float AdcGetChipTemperature()
     float rThermistor = 0;            // Holds thermistor resistance value
     float tKelvin     = 0;            // Holds calculated temperature
     float tempVal = 0;
-    float adcVal = (float) whole_adc_data[TEMP_GROUP][TEMP_TEMP_DATA];
+    float adcVal = (float) (whole_adc_data[TEMP_GROUP] + 1);
 
     rThermistor = BALANCE_RESISTOR * ( (MAX_ADC / adcVal) - 1);
     tKelvin = (BETA * ROOM_TEMP) /

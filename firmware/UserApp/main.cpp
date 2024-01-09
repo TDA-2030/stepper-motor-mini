@@ -15,7 +15,7 @@ Motor motor;
 TB67H450 tb67H450;
 MT6816 mt6816;
 EncoderCalibrator encoderCalibrator(&motor);
-Button button1(1, 1000), button2(2, 3000);
+Button button1(1, 2000), button2(2, 3000);
 void OnButton1Event(Button::Event _event);
 void OnButton2Event(Button::Event _event);
 Led statusLed;
@@ -32,6 +32,7 @@ static void led_show_id(uint16_t id)
     }
     HAL_Delay(200);
 
+    id = id < 8 ? id : 8;
     for (size_t i = 0; i < id; i++) {
         statusLed.Status(1, true);
         HAL_Delay(150);
@@ -55,8 +56,7 @@ extern "C" void Main()
     // Setting priority is EEPROM > Motor.h
     EEPROM eeprom;
     eeprom.get(0, boardConfig);
-    if (boardConfig.configStatus != CONFIG_OK) // use default settings
-    {
+    if (boardConfig.configStatus != CONFIG_OK) { // use default settings
         boardConfig = BoardConfig_t{
             .configStatus = CONFIG_OK,
             .canNodeId = 0,
@@ -65,20 +65,27 @@ extern "C" void Main()
             .currentLimit = 1 * 1000,    // A
             .velocityLimit = 30 * motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS, // r/s
             .velocityAcc = 100 * motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS,   // r/s^2
-            .calibrationCurrent=2000,
+            .calibrationCurrent = 2000,
+#ifdef GD32F130_150
+            .dce_kp = 250,
+            .dce_kv = 80,
+            .dce_ki = 100,
+            .dce_kd = 500,
+#elif defined(STM32F103xB)
             .dce_kp = 200,
             .dce_kv = 80,
             .dce_ki = 300,
             .dce_kd = 250,
+#endif
             .motor_temperature = 0.0,
-            .enableMotorOnBoot=false,
-            .enableStallProtect=false,
-            .enableTempWatch=false,
+            .enableMotorOnBoot = false,
+            .enableStallProtect = false,
+            .enableTempWatch = false,
         };
         eeprom.put(0, boardConfig);
     }
     led_show_id(boardConfig.canNodeId);
-    boardConfig.enableTempWatch=false;
+    // boardConfig.enableTempWatch=false;
     //depends on 3 bits switch now
     // boardConfig.canNodeId = defaultNodeID;
     motor.config.motionParams.encoderHomeOffset = boardConfig.encoderHomeOffset;
@@ -123,21 +130,19 @@ extern "C" void Main()
     HAL_TIM_Base_Start_IT(&htim4);  // 20kHz
 #endif
 
-    if (button1.IsPressed())
+    if (button1.IsPressed()) {
         encoderCalibrator.isTriggered = true;
+    }
 //    printf("start motor %d\r\n", defaultNodeID);
 
-    for (;;)
-    {
+    for (;;) {
 //        if ( encoderCalibrator.FlashRun() == 0)
-            encoderCalibrator.TickMainLoop();
+        encoderCalibrator.TickMainLoop();
 
-        if (boardConfig.configStatus == CONFIG_COMMIT)
-        {
+        if (boardConfig.configStatus == CONFIG_COMMIT) {
             boardConfig.configStatus = CONFIG_OK;
             eeprom.put(0, boardConfig);
-        } else if (boardConfig.configStatus == CONFIG_RESTORE)
-        {
+        } else if (boardConfig.configStatus == CONFIG_RESTORE) {
             eeprom.put(0, boardConfig);
             NVIC_SystemReset();
         }
@@ -155,95 +160,83 @@ extern "C" void Tim1Callback100Hz()
     button2.Tick(10);
     statusLed.Tick(10, motor.controller->state);
     //1s period to collect a temperature data
-    if (boardConfig.enableTempWatch)
-    {
-        count ++;
-        if ( count >= 100)
-        {
-            boardConfig.motor_temperature = AdcGetChipTemperature();
-            count = 0;
-        }
-        if (count > 50)
-        {
-            statusLed.Status(1, true);
-        }
-        else
-        {
-            statusLed.Status(1, false);
-        }
+
+    count ++;
+    if ( count >= 100) {
+        boardConfig.motor_temperature = AdcGetChipTemperature();
+        count = 0;
+    }
+    if (boardConfig.enableTempWatch) {
+
     }
 }
 
 
 extern "C" void Tim4Callback20kHz()
 {
-    
 
-    if (encoderCalibrator.isTriggered)
+
+    if (encoderCalibrator.isTriggered) {
         encoderCalibrator.Tick20kHz();
-    else
+    } else {
         motor.Tick20kHz();
+    }
 }
 
 
 void OnButton1Event(Button::Event _event)
 {
-    switch (_event)
-    {
-        case ButtonBase::UP:
-            break;
-        case ButtonBase::DOWN:
-            break;
-        case ButtonBase::LONG_PRESS:
-            boardConfig.configStatus = CONFIG_RESTORE;
-            break;
-        case ButtonBase::CLICK:
-            printf("KEY1\r\n");
-            if (motor.controller->modeRunning != Motor::MODE_STOP)
-            {
-                boardConfig.defaultMode = motor.controller->modeRunning;
-                motor.controller->requestMode = Motor::MODE_STOP;
-            } else
-            {
-                motor.controller->requestMode = static_cast<Motor::Mode_t>(boardConfig.defaultMode);
-            }
-            break;
+    switch (_event) {
+    case ButtonBase::UP:
+        break;
+    case ButtonBase::DOWN:
+        break;
+    case ButtonBase::LONG_PRESS:
+        boardConfig.configStatus = CONFIG_RESTORE;
+        break;
+    case ButtonBase::CLICK:
+        // printf("KEY1\r\n");
+        if (motor.controller->modeRunning != Motor::MODE_STOP) {
+            boardConfig.defaultMode = motor.controller->modeRunning;
+            motor.controller->requestMode = Motor::MODE_STOP;
+        } else {
+            motor.controller->requestMode = static_cast<Motor::Mode_t>(boardConfig.defaultMode);
+        }
+        break;
     }
 }
 
 
 void OnButton2Event(Button::Event _event)
 {
-    switch (_event)
-    {
-        case ButtonBase::UP:
+    switch (_event) {
+    case ButtonBase::UP:
+        break;
+    case ButtonBase::DOWN:
+        break;
+    case ButtonBase::LONG_PRESS:
+        switch (motor.controller->modeRunning) {
+        case Motor::MODE_COMMAND_CURRENT:
+        case Motor::MODE_PWM_CURRENT:
+            motor.controller->SetCurrentSetPoint(0);
             break;
-        case ButtonBase::DOWN:
+        case Motor::MODE_COMMAND_VELOCITY:
+        case Motor::MODE_PWM_VELOCITY:
+            motor.controller->SetVelocitySetPoint(0);
             break;
-        case ButtonBase::LONG_PRESS:
-            switch (motor.controller->modeRunning)
-            {
-                case Motor::MODE_COMMAND_CURRENT:
-                case Motor::MODE_PWM_CURRENT:
-                    motor.controller->SetCurrentSetPoint(0);
-                    break;
-                case Motor::MODE_COMMAND_VELOCITY:
-                case Motor::MODE_PWM_VELOCITY:
-                    motor.controller->SetVelocitySetPoint(0);
-                    break;
-                case Motor::MODE_COMMAND_POSITION:
-                case Motor::MODE_PWM_POSITION:
-                    motor.controller->SetPositionSetPoint(0);
-                    break;
-                case Motor::MODE_COMMAND_Trajectory:
-                case Motor::MODE_STEP_DIR:
-                case Motor::MODE_STOP:
-                    break;
-            }
+        case Motor::MODE_COMMAND_POSITION:
+        case Motor::MODE_PWM_POSITION:
+            motor.controller->SetPositionSetPoint(0);
             break;
-        case ButtonBase::CLICK:
-            printf("KEY2\r\n");
-            motor.controller->ClearStallFlag();
+        case Motor::MODE_COMMAND_Trajectory:
+        case Motor::MODE_STEP_DIR:
+        case Motor::MODE_STOP:
             break;
+        }
+        break;
+    case ButtonBase::CLICK:
+        // printf("KEY2\r\n");
+        motor.controller->ClearStallFlag();
+        break;
     }
 }

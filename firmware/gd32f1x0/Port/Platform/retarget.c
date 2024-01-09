@@ -76,8 +76,8 @@ int _fstat(int fd, struct stat *st)
     return 0;
 }
 
-void _kill(void){}
-void _getpid(void){}
+// void _kill(void){}
+// void _getpid(void){}
 void _sbrk(void){}
 
 #endif //#if !defined(OS_USE_SEMIHOSTING)

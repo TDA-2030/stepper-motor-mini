@@ -241,7 +241,7 @@ int32_t EncoderCalibratorBase::FlashRun() {
 void EncoderCalibratorBase::TestFlash() {
 //    if (state != CALI_CALCULATING)
 //        return;
-    printf("start test clear flash\r\n");
+    // printf("start test clear flash\r\n");
     int i;
 //    motor->driver->Sleep();
 
@@ -251,7 +251,7 @@ void EncoderCalibratorBase::TestFlash() {
         WriteFlash16bitsAppend(0x6666);
     }
     EndWriteFlash();
-    printf("start clear flash done\r\n");
+    // printf("start clear flash done\r\n");
 }
 
 void EncoderCalibratorBase::TickMainLoop()

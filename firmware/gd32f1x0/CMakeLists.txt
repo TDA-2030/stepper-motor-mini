@@ -72,7 +72,7 @@ file(GLOB_RECURSE SOURCES
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/system/gd32f150g8u6.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
-add_link_options(-mcpu=cortex-m3 -mthumb -mthumb-interwork --specs=nosys.specs)
+add_link_options(-mcpu=cortex-m3 -mthumb -mthumb-interwork --specs=nano.specs)
 add_link_options(-T ${LINKER_SCRIPT})
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
@@ -84,6 +84,6 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
 Building ${BIN_FILE}")
 
 add_custom_target(flash 
-COMMAND "D:/MySoftware/JLink_V794/JLink.exe" -device GD32F130G8  -speed 2000 -if SWD -CommanderScript ${CMAKE_CURRENT_LIST_DIR}/jlink-flash-fw-standalone.jlink
+COMMAND "D:/MySoftware/JLink_V794/JLink.exe" -device GD32F150G8  -speed 2000 -if SWD -CommanderScript ${CMAKE_CURRENT_LIST_DIR}/jlink-flash-fw-standalone.jlink
 DEPENDS ${PROJECT_NAME}.elf
 )

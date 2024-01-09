@@ -23,7 +23,7 @@ void TB67H450::InitPwm()
 
 void TB67H450::DacOutputVoltage(uint16_t _voltageA_3300mVIn12bits, uint16_t _voltageB_3300mVIn12bits)
 {
-    pwm_timer2_set_dutycycle(_voltageA_3300mVIn12bits >> 2, _voltageA_3300mVIn12bits >> 2);
+    pwm_timer2_set_dutycycle(_voltageB_3300mVIn12bits >> 2, _voltageA_3300mVIn12bits >> 2);
 }
 
 

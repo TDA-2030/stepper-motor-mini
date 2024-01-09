@@ -10,14 +10,15 @@ extern EncoderCalibrator encoderCalibrator;
 extern Led statusLed;
 static uint8_t g_tx_buffer[8];
 
-
+ 
 static void UartCAN_Send(uint8_t id, uint8_t *data)
 {
-    memcpy(g_tx_buffer, data, 7);
+    g_tx_buffer[0] = id;
+    memcpy(g_tx_buffer+1, data, 6);
     g_tx_buffer[7] = 0x6b;
 #ifdef GD32F130_150
     gpio_rs485_enable_send(true);
-    uart_send_dma(g_tx_buffer, 8);
+    uart_send_dma(g_tx_buffer, 8+2); // +2 because of DMA Complete interrupt early triggering
 #elif defined(STM32F103xB)
     HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, GPIO_PIN_SET);
     HAL_UART_Transmit_DMA(&huart1, g_tx_buffer, 8);

@@ -12,22 +12,22 @@
 #include "usart.h"
 
 
-extern void GpioPin7InterruptCallback();
 extern void Tim1Callback100Hz();
-extern void Tim3CaptureCallback();
 extern void Tim4Callback20kHz();
 extern void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 
 /*!
     \brief this function handles NMI exception
 */
-void NMI_Handler(void) {
+void NMI_Handler(void)
+{
 }
 
 /*!
     \brief this function handles HardFault exception
 */
-void HardFault_Handler(void) {
+void HardFault_Handler(void)
+{
     /* if Hard Fault exception occurs, go to infinite loop */
     while (1);
 }
@@ -35,7 +35,8 @@ void HardFault_Handler(void) {
 /*!
     \brief this function handles MemManage exception
 */
-void MemManage_Handler(void) {
+void MemManage_Handler(void)
+{
     /* if Memory Manage exception occurs, go to infinite loop */
     while (1);
 }
@@ -43,7 +44,8 @@ void MemManage_Handler(void) {
 /*!
     \brief this function handles BusFault exception
 */
-void BusFault_Handler(void) {
+void BusFault_Handler(void)
+{
     /* if Bus Fault exception occurs, go to infinite loop */
     while (1);
 }
@@ -51,7 +53,8 @@ void BusFault_Handler(void) {
 /*!
     \brief this function handles UsageFault exception
 */
-void UsageFault_Handler(void) {
+void UsageFault_Handler(void)
+{
     /* if Usage Fault exception occurs, go to infinite loop */
     while (1);
 }
@@ -59,19 +62,22 @@ void UsageFault_Handler(void) {
 /*!
     \brief this function handles SVC exception
 */
-void SVC_Handler(void) {
+void SVC_Handler(void)
+{
 }
 
 /*!
     \brief this function handles DebugMon exception
 */
-void DebugMon_Handler(void) {
+void DebugMon_Handler(void)
+{
 }
 
 /*!
     \brief this function handles PendSV exception
 */
-void PendSV_Handler(void) {
+void PendSV_Handler(void)
+{
 }
 
 /*!
@@ -87,17 +93,22 @@ void SysTick_Handler(void)
 */
 void USART0_IRQHandler(void)
 {
-    if(RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_IDLE)){
+    if (RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_IDLE)) {
         /* clear IDLE flag */
         usart_interrupt_flag_clear(USART0, USART_INT_FLAG_IDLE);
-        
-        /* number of data received */
-        volatile uint8_t rxLen = UART_TR_BUFFER_SIZE - (dma_transfer_number_get(DMA_CH2));
-        OnRecvEnd(g_rx_buffer, rxLen);
-        memset(g_rx_buffer, 0, rxLen);
-        
-        /* disable DMA and reconfigure */
+
+        usart_interrupt_disable(USART0, USART_INT_IDLE);// 使能USART中断
         dma_channel_disable(DMA_CH2);
+        /* number of data received */
+        uint8_t rxLen = UART_TR_BUFFER_SIZE - (dma_transfer_number_get(DMA_CH2));
+        if (rxLen > 0) {
+            OnRecvEnd(g_rx_buffer, rxLen);
+            memset(g_rx_buffer, 0, rxLen);
+        }
+
+        /* disable DMA and reconfigure */
+        dma_memory_address_config(DMA_CH2, (uint32_t)g_rx_buffer); // DMA通道x传输的存储器基地址配置
+        usart_interrupt_enable(USART0, USART_INT_IDLE);// 使能USART中断
         dma_transfer_number_config(DMA_CH2, UART_TR_BUFFER_SIZE);
         dma_channel_enable(DMA_CH2);
     }
@@ -105,9 +116,9 @@ void USART0_IRQHandler(void)
 
 void DMA_Channel1_2_IRQHandler(void)
 {
-    if(dma_interrupt_flag_get(DMA_CH1, DMA_INT_FLAG_FTF)){
+    if (dma_interrupt_flag_get(DMA_CH1, DMA_INT_FLAG_FTF)) {
+        dma_interrupt_flag_clear(DMA_CH1, DMA_INT_FLAG_FTF);
         HAL_UART_TxCpltCallback(0);
-        dma_interrupt_flag_clear(DMA_CH1, DMA_INT_FLAG_G);
         dma_channel_disable(DMA_CH1);
     }
 }
@@ -115,25 +126,27 @@ void DMA_Channel1_2_IRQHandler(void)
 /*!
     \brief this function handles TIMER1 TIMER_INT_UP interrupt request
 */
-void TIMER1_IRQHandler(void) {
+void TIMER1_IRQHandler(void)
+{
     /* judge whether a timer update interrupt is generated, clear timer interrupt flag bit */
     if (SET == timer_interrupt_flag_get(TIMER1, TIMER_INT_UP)) {
         timer_interrupt_flag_clear(TIMER1, TIMER_INT_UP);
 
         Tim1Callback100Hz();
-        
+
     }
 }
 
 /*!
     \brief this function handles TIMER13 TIMER_INT_UP interrupt request
 */
-void TIMER13_IRQHandler(void) {
+void TIMER13_IRQHandler(void)
+{
     /* judge whether a timer update interrupt is generated, clear timer interrupt flag bit */
     if (SET == timer_interrupt_flag_get(TIMER13, TIMER_INT_UP)) {
         timer_interrupt_flag_clear(TIMER13, TIMER_INT_UP);
 
         Tim4Callback20kHz();
-       
+
     }
 }

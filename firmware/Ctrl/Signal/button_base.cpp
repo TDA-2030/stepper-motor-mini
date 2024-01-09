@@ -7,7 +7,7 @@ void ButtonBase::Tick(uint32_t _timeElapseMillis)
 
     if (lastPinIO != pinIO)
     {
-        if (pinIO)
+        if (!pinIO)
         {
             OnEventFunc(UP);
             if (timer - pressTime > longPressTime)
