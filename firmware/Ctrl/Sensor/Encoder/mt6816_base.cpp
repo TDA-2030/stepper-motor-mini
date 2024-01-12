@@ -52,7 +52,11 @@ uint16_t MT6816Base::UpdateAngle()
         spiRawData.noMagFlag = (bool) (spiRawData.rawData & (0x0001 << 1));
     }
 
+#if REDUCE_RESOLUTION
+    angleData.rawAngle = spiRawData.rawAngle>>1;
+#else
     angleData.rawAngle = spiRawData.rawAngle;
+#endif
     angleData.rectifiedAngle = quickCaliDataPtr[angleData.rawAngle];
 
     return angleData.rectifiedAngle;

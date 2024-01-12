@@ -46,37 +46,26 @@
 *****/
 
 /*************************************************************** Stockpile_Start ***************************************************************/
-/*********************GD32F103xx*************************/
-//主储存块容量
-//Flash Size(bytes)/RAM size(bytes)
-// 大容量   1M / 96K                                     RG               VG           ZG
-// 大容量 768K / 96K                                     RF               VF           ZF
-// 大容量 512K / 64K                                     RE               VE           ZE
-// 大容量 384K / 64K                                     RD               VD           ZD
-// 大容量 256K / 48K                                     RC               VC           ZC
-// 中容量 128K / 20K      TB           CB                RB               VB
-// 中容量  64K / 20K      T8           C8                R8               V8
-// 小容量  32K / 10K      T6           C6                R6
-// 小容量  16K /  6K      T4           C4                R4
-//        						 36pin-QFN	48pin-LQFP/QFN	64pin-BGA/CSP/LQFP  100pin-LQFP  144pin-BGA/LQFP  
-/*************************************************************** Stockpile_End ***************************************************************/
 
 #ifndef STOCKPILE_CONFIG_H
 #define STOCKPILE_CONFIG_H
 
-
-/* ROM sizes */
+#include "main.h"
 
 //APP_FIRMWARE
 #define		STOCKPILE_APP_FIRMWARE_ADDR			(0x08000000) //(0x0800C000)		//起始地址
-#define		STOCKPILE_APP_FIRMWARE_SIZE			(1024*31)		//Flash容量    31K    XDrive(APP_FIRMWARE)
+#define		STOCKPILE_APP_FIRMWARE_SIZE			(1024*47)		//Flash容量    47K    XDrive(APP_FIRMWARE)
 //APP_CALI
+#if REDUCE_RESOLUTION
+#define		STOCKPILE_APP_CALI_ADDR					(STOCKPILE_APP_FIRMWARE_ADDR+STOCKPILE_APP_FIRMWARE_SIZE)		//起始地址
+#define		STOCKPILE_APP_CALI_SIZE					(1024*16)		//Flash容量    16K    XDrive(APP_CALI)(可容纳16K-2byte校准数据-即最大支持14位编码器的校准数据)
+#else
 #define		STOCKPILE_APP_CALI_ADDR					(STOCKPILE_APP_FIRMWARE_ADDR+STOCKPILE_APP_FIRMWARE_SIZE)		//起始地址
 #define		STOCKPILE_APP_CALI_SIZE					(1024*32)		//Flash容量    32K    XDrive(APP_CALI)(可容纳16K-2byte校准数据-即最大支持14位编码器的校准数据)
+#endif
 //APP_DATA
 #define		STOCKPILE_APP_DATA_ADDR					(STOCKPILE_APP_CALI_ADDR + STOCKPILE_APP_CALI_SIZE)		//起始地址
 #define		STOCKPILE_APP_DATA_SIZE					(1024)		//Flash容量     1K    XDrive(APP_DATA)
-
 
 
 #endif

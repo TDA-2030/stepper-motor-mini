@@ -100,6 +100,7 @@ void Error_Handler(void);
 #define RS486_RE_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
+#define REDUCE_RESOLUTION 1
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
