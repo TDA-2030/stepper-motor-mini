@@ -8,7 +8,6 @@ extern "C" {
 #include "stdint-gcc.h"
 
 void Main();
-void OnUartCmd(uint8_t* _data, uint16_t _len);
 void OnCanCmd(uint8_t _cmd, uint8_t* _data, uint32_t _len);
 
 #ifdef __cplusplus

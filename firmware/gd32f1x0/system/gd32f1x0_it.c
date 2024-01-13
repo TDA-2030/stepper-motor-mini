@@ -15,6 +15,7 @@
 extern void Tim1Callback100Hz();
 extern void Tim4Callback20kHz();
 extern void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+extern void virtual_timer_tick_50us(void);
 
 /*!
     \brief this function handles NMI exception
@@ -147,6 +148,6 @@ void TIMER13_IRQHandler(void)
         timer_interrupt_flag_clear(TIMER13, TIMER_INT_UP);
 
         Tim4Callback20kHz();
-
+        virtual_timer_tick_50us();
     }
 }

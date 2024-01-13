@@ -26,6 +26,7 @@
 #include <memory.h>
 #include "common_inc.h"
 #include "usart.h"
+#include "mbport.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +56,7 @@ extern void GpioPin7InterruptCallback();
 extern void Tim1Callback100Hz();
 extern void Tim3CaptureCallback();
 extern void Tim4Callback20kHz();
+extern void virtual_timer_tick_50us();
 
 /* USER CODE END PFP */
 
@@ -69,8 +71,6 @@ extern CAN_HandleTypeDef hcan;
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
-extern DMA_HandleTypeDef hdma_usart1_rx;
-extern DMA_HandleTypeDef hdma_usart1_tx;
 extern UART_HandleTypeDef huart1;
 /* USER CODE BEGIN EV */
 
@@ -227,33 +227,6 @@ void DMA1_Channel1_IRQHandler(void)
   /* USER CODE END DMA1_Channel1_IRQn 1 */
 }
 
-/**
-  * @brief This function handles DMA1 channel4 global interrupt.
-  */
-void DMA1_Channel4_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel4_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_tx);
-  /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel4_IRQn 1 */
-}
-
-/**
-  * @brief This function handles DMA1 channel5 global interrupt.
-  */
-void DMA1_Channel5_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel5_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_rx);
-  /* USER CODE BEGIN DMA1_Channel5_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel5_IRQn 1 */
-}
 
 /**
   * @brief This function handles USB high priority or CAN TX interrupts.
@@ -318,7 +291,7 @@ void EXTI9_5_IRQHandler(void)
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
     return;
   /* USER CODE END EXTI9_5_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
 
   /* USER CODE END EXTI9_5_IRQn 1 */
@@ -334,7 +307,7 @@ void TIM1_UP_IRQHandler(void)
     Tim1Callback100Hz();
     return;
   /* USER CODE END TIM1_UP_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim1);
+
   /* USER CODE BEGIN TIM1_UP_IRQn 1 */
 
   /* USER CODE END TIM1_UP_IRQn 1 */
@@ -348,7 +321,7 @@ void TIM3_IRQHandler(void)
   /* USER CODE BEGIN TIM3_IRQn 0 */
     return;
   /* USER CODE END TIM3_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim3);
+
   /* USER CODE BEGIN TIM3_IRQn 1 */
 
   /* USER CODE END TIM3_IRQn 1 */
@@ -362,9 +335,10 @@ void TIM4_IRQHandler(void)
   /* USER CODE BEGIN TIM4_IRQn 0 */
     __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
     Tim4Callback20kHz();
+    virtual_timer_tick_50us();
     return;
   /* USER CODE END TIM4_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim4);
+
   /* USER CODE BEGIN TIM4_IRQn 1 */
 
   /* USER CODE END TIM4_IRQn 1 */
@@ -376,22 +350,19 @@ void TIM4_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET))
+    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE) != RESET))
     {
-        __HAL_UART_CLEAR_IDLEFLAG(&huart1);
-        HAL_UART_DMAStop(&huart1);
-        uint32_t temp = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
-        volatile uint8_t rxLen = UART_TR_BUFFER_SIZE - temp;
+        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TXE);
+        pxMBFrameCBTransmitterEmpty(  );
+    }
 
-        OnRecvEnd(rx_buffer, rxLen);
-
-        memset(rx_buffer, 0, rxLen);
-
-        HAL_UART_Receive_DMA(&huart1, rx_buffer, UART_TR_BUFFER_SIZE);
+    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET))
+    {
+        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_RXNE);
+        pxMBFrameCBByteReceived(  );
     }
 
   /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
 
   /* USER CODE END USART1_IRQn 1 */

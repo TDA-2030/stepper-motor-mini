@@ -133,7 +133,10 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
-
+void gpio_rs485_enable_send(uint8_t enable)
+{
+    HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, enable?GPIO_PIN_SET:GPIO_PIN_RESET);
+}
 /* USER CODE END 2 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

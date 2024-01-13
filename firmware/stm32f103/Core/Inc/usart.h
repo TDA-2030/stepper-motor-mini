@@ -33,13 +33,9 @@ extern "C" {
 
 extern UART_HandleTypeDef huart1;
 
-#define UART_TR_BUFFER_SIZE 32
+
 
 /* USER CODE BEGIN Private defines */
-
-extern DMA_HandleTypeDef hdma_usart1_rx;
-extern DMA_HandleTypeDef hdma_usart1_tx;
-extern uint8_t rx_buffer[UART_TR_BUFFER_SIZE];
 
 
 /* USER CODE END Private defines */
@@ -47,8 +43,6 @@ extern uint8_t rx_buffer[UART_TR_BUFFER_SIZE];
 void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-extern void (*OnRecvEnd)(uint8_t *data, uint16_t len);
-void Uart_SetRxCpltCallBack(void(*xerc)(uint8_t *, uint16_t));
 
 /* USER CODE END Prototypes */
 

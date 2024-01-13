@@ -20,6 +20,11 @@ void OnButton1Event(Button::Event _event);
 void OnButton2Event(Button::Event _event);
 Led statusLed;
 
+
+extern void modbus_init(uint8_t id);
+extern void modbus_poll(void);
+
+
 static void led_show_id(uint16_t id)
 {
     for (size_t i = 0; i < 2; i++) {
@@ -135,6 +140,8 @@ extern "C" void Main()
     }
 //    printf("start motor %d\r\n", defaultNodeID);
 
+    modbus_init(boardConfig.canNodeId);
+
     for (;;) {
 //        if ( encoderCalibrator.FlashRun() == 0)
         encoderCalibrator.TickMainLoop();
@@ -146,6 +153,7 @@ extern "C" void Main()
             eeprom.put(0, boardConfig);
             NVIC_SystemReset();
         }
+        modbus_poll();
     }
 }
 

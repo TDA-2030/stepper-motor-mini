@@ -5,34 +5,29 @@
 #include "usart.h"
 #include "gpio.h"
 
+#if 0
 extern Motor motor;
 extern EncoderCalibrator encoderCalibrator;
 extern Led statusLed;
 static uint8_t g_tx_buffer[8];
 
- 
+
 static void UartCAN_Send(uint8_t id, uint8_t *data)
 {
     g_tx_buffer[0] = id;
     memcpy(g_tx_buffer+1, data, 6);
     g_tx_buffer[7] = 0x6b;
-#ifdef GD32F130_150
     gpio_rs485_enable_send(true);
+#ifdef GD32F130_150
     uart_send_dma(g_tx_buffer, 8+2); // +2 because of DMA Complete interrupt early triggering
 #elif defined(STM32F103xB)
-    HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, GPIO_PIN_SET);
     HAL_UART_Transmit_DMA(&huart1, g_tx_buffer, 8);
 #endif
 }
 
 extern "C" void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-#ifdef GD32F130_150
     gpio_rs485_enable_send(false);
-#elif defined(STM32F103xB)
-    UNUSED(huart);
-    HAL_GPIO_WritePin(RS486_RE_GPIO_Port, RS486_RE_Pin, GPIO_PIN_RESET);
-#endif
 }
 
 void OnUartCmd(uint8_t* _data, uint16_t _len)
@@ -283,4 +278,4 @@ void OnUartCmd(uint8_t* _data, uint16_t _len)
     }
     statusLed.Status(1, false);
 }
-
+#endif
