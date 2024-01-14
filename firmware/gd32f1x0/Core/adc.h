@@ -11,7 +11,7 @@ extern "C" {
 
 void adc_config(void);
 float AdcGetChipTemperature();
-
+float AdcGetVoltage();
 
 #ifdef __cplusplus
 }

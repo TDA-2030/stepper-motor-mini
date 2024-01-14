@@ -10,7 +10,7 @@
 #include "main.h"
 #include "systick.h"
 #include "usart.h"
-
+#include "mbport.h"
 
 extern void Tim1Callback100Hz();
 extern void Tim4Callback20kHz();
@@ -94,34 +94,16 @@ void SysTick_Handler(void)
 */
 void USART0_IRQHandler(void)
 {
-    if (RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_IDLE)) {
-        /* clear IDLE flag */
-        usart_interrupt_flag_clear(USART0, USART_INT_FLAG_IDLE);
-
-        usart_interrupt_disable(USART0, USART_INT_IDLE);// 使能USART中断
-        dma_channel_disable(DMA_CH2);
-        /* number of data received */
-        uint8_t rxLen = UART_TR_BUFFER_SIZE - (dma_transfer_number_get(DMA_CH2));
-        if (rxLen > 0) {
-            OnRecvEnd(g_rx_buffer, rxLen);
-            memset(g_rx_buffer, 0, rxLen);
-        }
-
-        /* disable DMA and reconfigure */
-        dma_memory_address_config(DMA_CH2, (uint32_t)g_rx_buffer); // DMA通道x传输的存储器基地址配置
-        usart_interrupt_enable(USART0, USART_INT_IDLE);// 使能USART中断
-        dma_transfer_number_config(DMA_CH2, UART_TR_BUFFER_SIZE);
-        dma_channel_enable(DMA_CH2);
+    if (RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_TC)) {
+        usart_interrupt_flag_clear(USART0, USART_INT_FLAG_TC);
+        pxMBFrameCBTransmitterEmpty(  );
     }
-}
 
-void DMA_Channel1_2_IRQHandler(void)
-{
-    if (dma_interrupt_flag_get(DMA_CH1, DMA_INT_FLAG_FTF)) {
-        dma_interrupt_flag_clear(DMA_CH1, DMA_INT_FLAG_FTF);
-        HAL_UART_TxCpltCallback(0);
-        dma_channel_disable(DMA_CH1);
+    if (RESET != usart_interrupt_flag_get(USART0, USART_INT_FLAG_RBNE)) {
+        usart_interrupt_flag_clear(USART0, USART_INT_FLAG_RBNE);
+        pxMBFrameCBByteReceived(  );
     }
+
 }
 
 /*!

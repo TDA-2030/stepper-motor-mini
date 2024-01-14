@@ -53,6 +53,9 @@ include_directories(
         ${FIRMWARE_DIR}/Ctrl/LowLevel
         ${FIRMWARE_DIR}/Ctrl/MotorControl
         ${FIRMWARE_DIR}/UserApp
+        ${FIRMWARE_DIR}/freemodbus/modbus/include
+        ${FIRMWARE_DIR}/freemodbus/modbus/rtu
+        ${FIRMWARE_DIR}/freemodbus/port
         Port
         )
 
@@ -66,6 +69,10 @@ file(GLOB_RECURSE SOURCES
 "${FIRMWARE_DIR}/Ctrl/*.*"
 "Core/*.c"
 "${FIRMWARE_DIR}/UserApp/*.*"
+"${FIRMWARE_DIR}/freemodbus/modbus/rtu/*.c"
+"${FIRMWARE_DIR}/freemodbus/modbus/functions/*.c"
+"${FIRMWARE_DIR}/freemodbus/modbus/*.c"
+"${FIRMWARE_DIR}/freemodbus/port/*.c"
 "Port/*.*"
 )
 

@@ -1,76 +1,78 @@
-from serial import Serial, serialutil
-from serial.threaded import ReaderThread, Protocol,Packetizer
+
 import time
-from queue import Queue, Empty
 import struct
 
-class SerialReaderProtocolRaw(Packetizer):
+from threading import Lock
+import time
 
-    def __init__(self) -> None:
-        super().__init__()
-        Packetizer.TERMINATOR = b'\x6B'
-        self.recv_queue:Queue = None
+import minimalmodbus
+import serial
+import serial.tools.list_ports
+import traceback
 
-    def connection_made(self, transport: ReaderThread) -> None:
-        """Called when reader thread is started"""
-        super().connection_made(transport)
-        print("COM Connected, ready to receive data...")
-
-    # def data_received(self, data: bytes) -> None:
-    #     """Called with snippets received from the serial port"""
-    #     print(f"recv:{data}")
-    #     self.recv_queue.put(data)
-    def handle_packet(self, packet: bytes) -> None:
-        packet = bytes(packet)
-        # print(f"recv:{packet}")
-        self.recv_queue.put(packet)
-        self.buffer.clear()
-
-    def connection_lost(self, exc: BaseException) -> None:
-        super().connection_lost(exc)
-        print("COM disconnected")
+def get_serial_port():
+    port = serial.tools.list_ports.comports()
+    return [p.__dict__ for p in port]
 
 
-class COM:
+class RS485():
+    def __init__(self, slave_addr=6) -> None:
+        self.slave_addr = slave_addr
+        self.is_connected:bool = False
+        self.lock = Lock()
 
-    def __init__(self, port, baud):
-        self.port = port
-        self.baud = int(baud)
-        self.open_com = None
-        self.recv_queue = Queue(10)
+    def connect(self, ip, port):
+        try:
+            print(f"Connecting RS485 addr:{self.slave_addr} {ip}:{port}")
+            # self.master = modbus_tcp.TcpMaster(ip, port)
+            # self.master.set_timeout(5.0)
+            self.ip = ip
+            self.port = port
+            self.ser = serial.Serial(ip, port, timeout=0.5)
+            self.master = minimalmodbus.Instrument(self.ser, self.slave_addr)
+            
+            self.is_connected = True
+            return True
+        except:
+            traceback.print_exc()
+            return False
+
+    def disconnect(self):
+        self.ser.close()
+        del self.master
+        del self.ser
+        self.is_connected = False
+
+    def read_register(self, addr:int):
+        ret = self.master.read_register(addr)
+        # return self.master.execute(self.slave_addr, cst.READ_HOLDING_REGISTERS, addr, 1)
+        return ret
         
-    def open(self):
-        # Initiate serial port
-        print(f"COM port:{self.port} baud:{self.baud}")
-        self.serial_port = Serial(self.port, self.baud)
-        # Initiate ReaderThread
-        self.reader = ReaderThread(self.serial_port, SerialReaderProtocolRaw)
-        # Start reader
-        self.reader.start()
-        self.recv_queue.queue.clear()
-        self.reader.protocol.recv_queue = self.recv_queue
+    def write_register(self, addr:int, value:int):
+        ret = self.master.write_register(addr, value, functioncode=6)
+        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
+        return ret
 
-    def close(self):
-        self.reader.close()
-
-    def send_cmd(self, data: bytearray, wait_sec: float = 1.):
-        self.reader.protocol.buffer.clear()
-        self.serial_port.write(data)
-        if wait_sec > 0:
-            try:
-                data = self.reader.protocol.recv_queue.get(block=True, timeout=wait_sec)
-                return data
-            except Empty:
-                print("command no ack")
-        else:
-            time.sleep(0.02)
+    def write_long(self, addr:int, value:int, number_of_bytes:int=2):
+        ret = self.master.write_long(addr, value, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP, number_of_registers=number_of_bytes)
+        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
+        return ret
+    def write_float(self, addr:int, value:float):
+        ret = self.master.write_float(addr, value, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
+        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
+        return ret
+    
+    def read_float(self, addr:int):
+        ret = self.master.read_float(addr, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
+        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
+        return ret
 
 
 class Motor():
 
-    def __init__(self, com:COM, node_id:int):
+    def __init__(self, com:RS485):
         self.com = com
-        self.node_id = node_id
+        self.base_addr = 0x1000
 
     @staticmethod
     def floatToBytes(f):
@@ -82,135 +84,111 @@ class Motor():
         return struct.unpack("<f",ba)[0]
 
     def enable_motor(self, enable:bool):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x01" + enable.to_bytes(1, "little")
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_register(self.base_addr+1, int(enable))
 
     def calibration(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x02"
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_register(self.base_addr+2, 1)
  
     def set_current(self, current_A: float):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x03" + self.floatToBytes(current_A)
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_float(self.base_addr+3, current_A)
 
     def set_velocity(self, velocity: float):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x04" + self.floatToBytes(velocity)
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_float(self.base_addr+5, velocity)
 
     def set_position(self, angle: float):
         """
         angel: 圈数
         """
-        step=angle
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x05" + self.floatToBytes(step) + b"\x00"
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_float(self.base_addr+7, angle)
 
     def set_position_with_time(self, angle: float, _time: float):
         """
         angel: 圈数
         _time: 运行时间
         """
-        step=angle
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x06" + self.floatToBytes(step) + self.floatToBytes(_time) + b"\x00"
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_long(self.base_addr+9, int(self.floatToBytes(angle) + self.floatToBytes(_time)), 4)
 
     def set_position_with_velocity(self, angle: float, _vel:float):
         """
         angel: 圈数
         _vel: 每秒转数
         """
-        step=angle
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x07" + self.floatToBytes(step) + self.floatToBytes(_vel) + b"\x00"
-        d = self.com.send_cmd(cmd, wait_sec=0.5)
-        if d[0] != self.node_id:
-            print(f"id error current id={self.node_id}, recv id={d[0]}")
-        return self.bytesToFloat(d[1:5])
+        # self.com.write_float(self.base_addr+13, angle)
+        # time.sleep(0.1)
+        # self.com.write_float(self.base_addr+15, _vel)
+
+        self.com.write_long(self.base_addr+13, 
+                            struct.unpack("<Q",self.floatToBytes(angle) + self.floatToBytes(_vel))[0], 4)
+
 
     def get_FocCurrent(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x21"
-        d = self.com.send_cmd(cmd, wait_sec=0.3)
-        if d[0] != self.node_id:
-            print(f"id error current id={self.node_id}, recv id={d[0]}")
-        return self.bytesToFloat(d[1:5])
+        return self.com.read_float(self.base_addr+3)
     
     def get_temperature(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x25"
-        d = self.com.send_cmd(cmd, wait_sec=0.3)
-        if d[0] != self.node_id:
-            print(f"id error current id={self.node_id}, recv id={d[0]}")
-        return self.bytesToFloat(d[1:5])
+        return self.com.read_float(self.base_addr+35)
+    
+    def get_voltage(self):
+        return self.com.read_float(self.base_addr+37)
 
     def get_position(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x23"
-        d = self.com.send_cmd(cmd, wait_sec=0.3)
-        if d[0] != self.node_id:
-            print(f"id error current id={self.node_id}, recv id={d[0]}")
-        return self.bytesToFloat(d[1:5])
-    
+        return self.com.read_float(self.base_addr+7)
+
     def get_velocity(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x22"
-        d = self.com.send_cmd(cmd, wait_sec=0.3)
-        if d[0] != self.node_id:
-            print(f"id error current id={self.node_id}, recv id={d[0]}")
-        return self.bytesToFloat(d[1:5])
+        return self.com.read_float(self.base_addr+5)
 
-    def set_node_id(self, id:int, save:bool=False):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x11" + id.to_bytes(4, "little") + save.to_bytes(1, "little")
-        self.com.send_cmd(cmd, wait_sec=0)
+    def set_node_id(self, id:int):
+        return self.com.write_register(self.base_addr+17, id)
 
-    def set_rated_current(self, current_A:float, save:bool=False):
+    def set_rated_current(self, current_A:float):
         """
         current_A: 电流（安培）
         """
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x12" + self.floatToBytes(current_A) + save.to_bytes(1, "little")
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_float(self.base_addr+18, current_A)
 
-    def set_rated_velocity(self, velocity:float, save:bool=False):
+    def set_rated_velocity(self, velocity:float):
         """
         velocity: 每秒转数
         """
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x13" + self.floatToBytes(velocity) + save.to_bytes(1, "little")
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_float(self.base_addr+20, velocity)
 
-    def set_rated_acceleration(self, acceleration:float, save:bool=False):
+    def set_rated_acceleration(self, acceleration:float):
         """
         acceleration: 加速度
         """
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x14" + self.floatToBytes(acceleration) + save.to_bytes(1, "little")
-        self.com.send_cmd(cmd, wait_sec=0)
+        self.com.write_float(self.base_addr+22, acceleration)
 
     def set_home_position(self):
         """
         设置后会自动保存
         """
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x15"
-        self.com.send_cmd(cmd, wait_sec=0)
+        return self.com.write_register(self.base_addr+24, 1)
 
-    def set_DEC_Kp(self, Kp:int, save:bool=False):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x17" + Kp.to_bytes(4, 'little') + save.to_bytes(1, 'little')
-        self.com.send_cmd(cmd, wait_sec=0)
-    def set_DEC_Kv(self, Kv:int, save:bool=False):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x18" + Kv.to_bytes(4, 'little') + save.to_bytes(1, 'little')
-        self.com.send_cmd(cmd, wait_sec=0)
-    def set_DEC_Ki(self, Ki:int, save:bool=False):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x19" + Ki.to_bytes(4, 'little') + save.to_bytes(1, 'little')
-        self.com.send_cmd(cmd, wait_sec=0)
-    def set_DEC_Kd(self, Kd:int, save:bool=False):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x1A" + Kd.to_bytes(4, 'little') + save.to_bytes(1, 'little')
-        self.com.send_cmd(cmd, wait_sec=0)
+
+    def set_DEC_Kp(self, Kp:int):
+        self.com.write_float(self.base_addr+26, Kp)
+    def set_DEC_Kv(self, Kv:int):
+        self.com.write_float(self.base_addr+28, Kv)
+    def set_DEC_Ki(self, Ki:int):
+        self.com.write_float(self.base_addr+30, Ki)
+    def set_DEC_Kd(self, Kd:int):
+        self.com.write_float(self.base_addr+32, Kd)
 
     def enable_temperature(self, enable:bool):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x7d" + enable.to_bytes(1, "little")
-        self.com.send_cmd(cmd, wait_sec=0)
+        return self.com.write_register(self.base_addr+35, int(enable))
+
+    def save_config(self):
+        return self.com.write_register(self.base_addr+125, 1)
 
     def erase_configs(self):
-        cmd = self.node_id.to_bytes(1, 'little') + b"\x7e"
-        self.com.send_cmd(cmd, wait_sec=0)
+        return self.com.write_register(self.base_addr+126, 1)
+    
+    def reboot(self):
+        return self.com.write_register(self.base_addr+127, 1)
 
 
 class LeadScrew(Motor):
 
-    def __init__(self, com: COM, addr: int, screw_d:float):
+    def __init__(self, com: RS485, addr: int, screw_d:float):
         super().__init__(com, addr)
         self.screw_d=screw_d
         self.home_position = 0.0
@@ -271,11 +249,28 @@ class LeadScrew(Motor):
 #     motor.enable_temperature(False)
 # exit()
 
+
+# d = RS485(1)
+# d.connect('COM3', 115200)
+# lt = time.perf_counter()
+# import random
+# while True:
+#     vv = random.randint(0, 65535)
+#     d.write_register(0x1000, vv)
+#     v = d.read_register(0x1000 + 0)
+#     t = time.perf_counter()
+#     print(v, t-lt)
+#     if v != vv:
+#         break
+#     lt = t
+#     time.sleep(0.03)
+# exit()
+
 if __name__ == "__main__":
 
-    com = COM('COM3', 115200)
-    com.open()
-    motor = Motor(com, 0)
+    d = RS485(1)
+    d.connect('COM3', 115200)
+    motor = Motor(d)
   
     print("========run")
     # motor.set_node_id(10, False)
@@ -283,12 +278,14 @@ if __name__ == "__main__":
     # motor.calibration()
     # exit()
     print(f"temp={motor.get_temperature()}")
+    print(f"voltage={motor.get_voltage()}")
     print(f"foc current={motor.get_FocCurrent()}")
     print(f"position={motor.get_position()}")
     print(f"velocity={motor.get_velocity()}")
+
     motor.set_rated_current(1.5)
     motor.set_rated_acceleration(500)
-    motor.set_rated_velocity(40)
+    motor.set_rated_velocity(50)
     # motor.set_DEC_Kp(250)
     # motor.set_DEC_Kv(80)
     # motor.set_DEC_Ki(100)
@@ -298,14 +295,18 @@ if __name__ == "__main__":
     # exit()
     try:
         while True:
-            r = motor.set_position(2)
+            r = motor.set_position_with_velocity(2, 40)
+            r = motor.get_position()
             print(r)
-            time.sleep(0.8)
-            r = motor.set_position(0)
+
+            time.sleep(0.5)
+
+            r = motor.set_position_with_velocity(0, 40)
+            r = motor.get_position()
             print(r)
-            time.sleep(0.8)
+            time.sleep(0.5)
     except KeyboardInterrupt as e:
         motor.enable_motor(False)
         motor.enable_temperature(False)
 
-    com.close()
+    d.disconnect()

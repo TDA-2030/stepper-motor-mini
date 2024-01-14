@@ -2,7 +2,7 @@
  * FreeModbus Libary: Atmel AT91SAM3S Demo Application
  * Copyright (C) 2010 Christian Walter <cwalter@embedded-solutions.at>
  *
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -13,7 +13,7 @@
  *   documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *   derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * IF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -38,55 +38,46 @@
 #include "mbport.h"
 #include "usart.h"
 #include "gpio.h"
-
+#include "main.h"
 
 void
-vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
+vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable)
 {
 #ifdef GD32F130_150
-    if( xRxEnable )
-    {
-        usart_receive_config(USART0, USART_RECEIVE_ENABLE);
+    if ( xRxEnable ) {
+        gpio_rs485_enable_send(FALSE);
+        usart_interrupt_flag_clear(USART0, USART_INT_FLAG_RBNE);
         usart_interrupt_enable(USART0, USART_INT_RBNE);
-    }
-    else
-    {
-        // usart_receive_config(USART0, USART_RECEIVE_DISABLE);
+    } else {
         usart_interrupt_disable(USART0, USART_INT_RBNE);
     }
 
-    if( xTxEnable )
-    {
-        usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
-        usart_interrupt_enable(USART0, USART_INT_TBE);
-    }
-    else
-    {
-        // usart_transmit_config(USART0, USART_TRANSMIT_DISABLE);
-        usart_interrupt_disable(USART0, USART_INT_TBE);
+    if ( xTxEnable ) {
+        gpio_rs485_enable_send(TRUE);
+        usart_interrupt_flag_clear(USART0, USART_INT_FLAG_TC);
+        usart_interrupt_enable(USART0, USART_INT_TC);
+    } else {
+        gpio_rs485_enable_send(FALSE);
+        usart_interrupt_disable(USART0, USART_INT_TC);
     }
 #elif defined(STM32F103xB)
 
-    if( xRxEnable )
-    {
-       gpio_rs485_enable_send(FALSE);
-       __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);
-    }
-    else
-    {
-       gpio_rs485_enable_send(FALSE);
-       __HAL_UART_DISABLE_IT(&huart1, UART_IT_RXNE);
+    if ( xRxEnable ) {
+        gpio_rs485_enable_send(FALSE);
+        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_RXNE);
+        __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);
+
+    } else {
+        __HAL_UART_DISABLE_IT(&huart1, UART_IT_RXNE);
     }
 
-    if( xTxEnable )
-    {
+    if ( xTxEnable ) {
         gpio_rs485_enable_send(TRUE);
-        __HAL_UART_ENABLE_IT(&huart1, UART_IT_TXE);
-    }
-    else
-    {
-       gpio_rs485_enable_send(FALSE);
-        __HAL_UART_DISABLE_IT(&huart1, UART_IT_TXE);
+        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TC);
+        __HAL_UART_ENABLE_IT(&huart1, UART_IT_TC);
+    } else {
+        gpio_rs485_enable_send(FALSE);
+        __HAL_UART_DISABLE_IT(&huart1, UART_IT_TC);
     }
 #endif
 }
@@ -94,7 +85,7 @@ vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 BOOL
 xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
 {
-    
+
     return TRUE;
 }
 
@@ -117,7 +108,7 @@ xMBPortSerialPutByte( CHAR ucByte )
 }
 
 BOOL
-xMBPortSerialGetByte( CHAR * pucByte )
+xMBPortSerialGetByte( CHAR *pucByte )
 {
 #ifdef GD32F130_150
     *pucByte = (CHAR)usart_data_receive(USART0);

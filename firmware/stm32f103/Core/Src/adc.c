@@ -184,6 +184,16 @@ float AdcGetChipTemperature()
     return tempVal;
 }
 
+float AdcGetVoltage()
+{
+    float tempVal = 0;
+    float adcVal = (float) whole_adc_data[TEMP_GROUP][0];
+    // 10k 1k
+    tempVal = adcVal * 3.3 * 11 / 4095.0; 
+
+    return tempVal;
+}
+
 /* USER CODE END 1 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

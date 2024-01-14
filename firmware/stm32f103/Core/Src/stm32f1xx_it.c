@@ -350,16 +350,17 @@ void TIM4_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE) != RESET))
-    {
-        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TXE);
-        pxMBFrameCBTransmitterEmpty(  );
-    }
 
     if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET))
     {
-        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_RXNE);
         pxMBFrameCBByteReceived(  );
+        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_RXNE);
+    }
+
+    if ((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC) != RESET))
+    {
+        pxMBFrameCBTransmitterEmpty(  ); // send completion callback
+        __HAL_UART_CLEAR_FLAG(&huart1, UART_FLAG_TC);
     }
 
   /* USER CODE END USART1_IRQn 0 */

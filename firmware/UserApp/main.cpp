@@ -64,7 +64,7 @@ extern "C" void Main()
     if (boardConfig.configStatus != CONFIG_OK) { // use default settings
         boardConfig = BoardConfig_t{
             .configStatus = CONFIG_OK,
-            .canNodeId = 0,
+            .canNodeId = 1,
             .encoderHomeOffset = 0,
             .defaultMode = Motor::MODE_COMMAND_POSITION,
             .currentLimit = 1 * 1000,    // A
@@ -172,6 +172,7 @@ extern "C" void Tim1Callback100Hz()
     count ++;
     if ( count >= 100) {
         boardConfig.motor_temperature = AdcGetChipTemperature();
+        boardConfig.motor_voltage = AdcGetVoltage();
         count = 0;
     }
     if (boardConfig.enableTempWatch) {
