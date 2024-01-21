@@ -3,7 +3,7 @@
 bool MT6816Base::Init()
 {
     SpiInit();
-    UpdateAngle();
+    // UpdateAngle();
 
     // Check if the stored calibration data are valid
     angleData.rectifyValid = true;
@@ -22,7 +22,7 @@ uint16_t MT6816Base::UpdateAngle()
     dataTx[0] = (0x80 | 0x03) << 8;
     dataTx[1] = (0x80 | 0x04) << 8;
 
-    for (uint8_t i = 0; i < 3; i++)
+    for (uint8_t i = 0; i < 2; i++)
     {
         dataRx[0] = SpiTransmitAndRead16Bits(dataTx[0]);
         dataRx[1] = SpiTransmitAndRead16Bits(dataTx[1]);

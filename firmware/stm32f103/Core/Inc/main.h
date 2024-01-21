@@ -101,6 +101,10 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 #define REDUCE_RESOLUTION 1
+
+// #define GPIO_DBG_PIN(GPIO_PORT, PIN, STATE)  (STATE) ? ((GPIO_PORT)->BSRR = (PIN)) : ((GPIO_PORT)->BRR = (PIN));
+// #define GPIO_DBG(STATE) GPIO_DBG_PIN(RS486_RE_GPIO_Port, RS486_RE_Pin, (STATE))
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

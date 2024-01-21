@@ -66,7 +66,7 @@ include_directories(
         Port
 )
 
-add_definitions(-DUSE_HAL_DRIVER -D__MICROLIB -DSTM32F1 -DSTM32F1xx -DSTM32F103xB)
+add_definitions(-DUSE_HAL_DRIVER -DUSE_FULL_LL_DRIVER -D__MICROLIB -DSTM32F1 -DSTM32F1xx -DSTM32F103xB)
 
 file(GLOB_RECURSE SOURCES
         "startup/*.*"
