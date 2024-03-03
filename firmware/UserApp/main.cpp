@@ -86,6 +86,7 @@ extern "C" void Main()
             .enableMotorOnBoot = false,
             .enableStallProtect = false,
             .enableTempWatch = false,
+            .reverse_direction = false,
         };
         eeprom.put(0, boardConfig);
     }

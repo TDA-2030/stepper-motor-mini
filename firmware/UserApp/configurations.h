@@ -37,6 +37,7 @@ typedef struct Config_t
     bool enableMotorOnBoot;
     bool enableStallProtect;
     bool enableTempWatch;
+    bool reverse_direction;
 } BoardConfig_t;
 
 extern BoardConfig_t boardConfig;

@@ -3,6 +3,7 @@
 
 #include <cmath>
 
+#define REVERSE_DIR(NUM) (boardConfig.reverse_direction ? -(NUM) : (NUM))
 
 void Motor::Tick20kHz()
 {
@@ -33,18 +34,19 @@ void Motor::CloseLoopControlTick()
     if (isFirstCalled)
     {
         int32_t angle;
-        if (config.motionParams.encoderHomeOffset < MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS / 2)
+        int32_t HomeOffset = config.motionParams.encoderHomeOffset % MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS;
+        if (HomeOffset < MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS / 2)
         {
             angle =
                 encoder->angleData.rectifiedAngle >
-                config.motionParams.encoderHomeOffset + MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS / 2 ?
+                HomeOffset + MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS / 2 ?
                 encoder->angleData.rectifiedAngle - MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS :
                 encoder->angleData.rectifiedAngle;
         } else
         {
             angle =
                 encoder->angleData.rectifiedAngle <
-                config.motionParams.encoderHomeOffset - MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS / 2 ?
+                HomeOffset - MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS / 2 ?
                 encoder->angleData.rectifiedAngle + MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS :
                 encoder->angleData.rectifiedAngle;
         }
@@ -427,6 +429,7 @@ void Motor::Controller::AddTrajectorySetPoint(int32_t _pos, int32_t _vel)
 
 void Motor::Controller::SetPositionSetPoint(int32_t _pos)
 {
+    _pos = REVERSE_DIR(_pos);
     goalPosition = _pos + context->config.motionParams.encoderHomeOffset;
 }
 
@@ -460,6 +463,8 @@ bool Motor::Controller::SetPositionSetPointWithTime(int32_t _pos, float _time)
 
 void Motor::Controller::SetVelocitySetPoint(int32_t _vel)
 {
+    _vel = REVERSE_DIR(_vel);
+
     if ((_vel >= -context->config.motionParams.ratedVelocity) &&
         (_vel <= context->config.motionParams.ratedVelocity))
     {
@@ -470,29 +475,34 @@ void Motor::Controller::SetVelocitySetPoint(int32_t _vel)
 
 float Motor::Controller::GetPosition(bool _isLap)
 {
-    return _isLap ?
+    float ret = _isLap ?
            (float) (realLapPosition - context->config.motionParams.encoderHomeOffset) /
            (float) (context->MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS)
                   :
            (float) (realPosition - context->config.motionParams.encoderHomeOffset) /
            (float) (context->MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS);
+    return REVERSE_DIR(ret);
 }
 
 
 float Motor::Controller::GetVelocity()
 {
-    return (float) estVelocity / (float) context->MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS;
+    float ret = (float) estVelocity / (float) context->MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS;
+    return REVERSE_DIR(ret);
 }
 
 
 float Motor::Controller::GetFocCurrent()
 {
-    return (float) focCurrent / 1000.f;
+    float ret = (float) focCurrent / 1000.f;
+    return REVERSE_DIR(ret);
 }
 
 
 void Motor::Controller::SetCurrentSetPoint(int32_t _cur)
 {
+    _cur = REVERSE_DIR(_cur);
+
     if (_cur > context->config.motionParams.ratedCurrent)
         goalCurrent = context->config.motionParams.ratedCurrent;
     else if (_cur < -context->config.motionParams.ratedCurrent)
@@ -614,8 +624,7 @@ void Motor::Controller::Init()
 
 void Motor::Controller::ApplyPosAsHomeOffset()
 {
-    context->config.motionParams.encoderHomeOffset = realPosition %
-                                                     context->MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS;
+    context->config.motionParams.encoderHomeOffset = realPosition;
 }
 
 

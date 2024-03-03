@@ -88,7 +88,7 @@ static void read_reg(uint16_t iRegIndex)
         float_2u8((float)motor.config.motionParams.ratedVelocityAcc / (float)motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS, (uint8_t *)_DATA);
         break;
     case 24: // Apply Home-Position
-        int32_2u8(motor.config.motionParams.encoderHomeOffset, (uint8_t *)_DATA);
+        float_2u8(motor.config.motionParams.encoderHomeOffset / (float)motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS, (uint8_t *)_DATA);
         break;
     case 25: // Auto-Enable
         usRegHoldingBuf[iRegIndex] = boardConfig.enableMotorOnBoot;
@@ -113,6 +113,9 @@ static void read_reg(uint16_t iRegIndex)
         break;
     case 37: // voltage
         float_2u8(boardConfig.motor_voltage, (uint8_t *)_DATA);
+        break;
+    case 39: // reverse_direction
+        usRegHoldingBuf[iRegIndex] = boardConfig.reverse_direction;
         break;
 
     default:
@@ -231,6 +234,9 @@ static void write_reg(uint16_t iRegIndex)
         break;
     case 37: // voltage
         boardConfig.motor_voltage_threhold = *(float *) (_DATA);
+        break;
+    case 39: // reverse_direction
+        boardConfig.reverse_direction = (usRegHoldingBuf[iRegIndex] == 1);
         break;
 
     case REG_HOLDING_NREGS-3: // config commit
