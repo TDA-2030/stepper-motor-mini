@@ -43,26 +43,21 @@ class RS485():
 
     def read_register(self, addr:int):
         ret = self.master.read_register(addr)
-        # return self.master.execute(self.slave_addr, cst.READ_HOLDING_REGISTERS, addr, 1)
         return ret
         
     def write_register(self, addr:int, value:int):
         ret = self.master.write_register(addr, value, functioncode=6)
-        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
         return ret
 
     def write_long(self, addr:int, value:int, number_of_bytes:int=2):
         ret = self.master.write_long(addr, value, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP, number_of_registers=number_of_bytes)
-        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
         return ret
     def write_float(self, addr:int, value:float):
         ret = self.master.write_float(addr, value, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
-        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
         return ret
     
     def read_float(self, addr:int):
         ret = self.master.read_float(addr, byteorder=minimalmodbus.BYTEORDER_LITTLE_SWAP)
-        # return self.master.execute(self.slave_addr, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
         return ret
     
     def read_long(self, addr:int, number_of_bytes:int=2):
@@ -70,11 +65,14 @@ class RS485():
         return ret
 
 
-class Motor():
+class StepperMotor():
 
-    def __init__(self, com:RS485):
+    def __init__(self, com:RS485, name:str=""):
         self.com = com
         self.base_addr = 0x1000
+        if name == "":
+            name = f"motor{com.slave_addr}"
+        self.name = name
 
     @staticmethod
     def floatToBytes(f):
@@ -106,31 +104,26 @@ class Motor():
     def set_position_with_time(self, angle: float, _time: float):
         """
         angel: 圈数
-        _time: 运行时间
+        _time: 运行时间(second)
         """
         self.com.write_long(self.base_addr+9, int.from_bytes(self.floatToBytes(angle) + self.floatToBytes(_time), 'little'), 4)
 
     def set_position_with_velocity(self, angle: float, _vel:float):
         """
         angel: 圈数
-        _vel: 每秒转数
+        _vel: 速度（转每秒）
         """
-        # self.com.write_float(self.base_addr+13, angle)
-        # time.sleep(0.1)
-        # self.com.write_float(self.base_addr+15, _vel)
-
         self.com.write_long(self.base_addr+13, 
                             struct.unpack("<Q",self.floatToBytes(angle) + self.floatToBytes(_vel))[0], 4)
 
-
     def get_FocCurrent(self):
         return self.com.read_float(self.base_addr+3)
-    
+
     def get_temperature(self):
-        return self.com.read_float(self.base_addr+35)
-    
-    def get_voltage(self):
         return self.com.read_float(self.base_addr+37)
+
+    def get_voltage(self):
+        return self.com.read_float(self.base_addr+39)
 
     def get_position(self):
         return self.com.read_float(self.base_addr+7)
@@ -138,17 +131,23 @@ class Motor():
     def get_velocity(self):
         return self.com.read_float(self.base_addr+5)
 
-    def set_node_id(self, id:int):
-        return self.com.write_register(self.base_addr+17, id)
-
     def get_node_id(self):
         return self.com.read_register(self.base_addr+17)
 
-    def get_HomeOffset(self):
-        return self.com.read_float(self.base_addr+24)
-    
+    def get_rated_current(self):
+        return self.com.read_float(self.base_addr+18)
+
+    def get_rated_velocity(self):
+        self.com.read_float(self.base_addr+20)
+
+    def get_rated_acceleration(self):
+        self.com.read_float(self.base_addr+22)
+
     def get_reverse_direction(self):
-        return self.com.read_register(self.base_addr+39)
+        return self.com.read_register(self.base_addr+25)
+
+    def set_node_id(self, id:int):
+        return self.com.write_register(self.base_addr+17, id)
 
     def set_rated_current(self, current_A:float):
         """
@@ -170,80 +169,101 @@ class Motor():
 
     def set_home_position(self):
         """
-        设置后会自动保存
+        设置当前位置为零位置，调用后需要延时等待参数自动保存
         """
         return self.com.write_register(self.base_addr+24, 1)
 
     def set_DEC_Kp(self, Kp:int):
-        self.com.write_long(self.base_addr+26, Kp)
+        self.com.write_long(self.base_addr+28, Kp)
     def set_DEC_Kv(self, Kv:int):
-        self.com.write_long(self.base_addr+28, Kv)
+        self.com.write_long(self.base_addr+30, Kv)
     def set_DEC_Ki(self, Ki:int):
-        self.com.write_long(self.base_addr+30, Ki)
+        self.com.write_long(self.base_addr+32, Ki)
     def set_DEC_Kd(self, Kd:int):
-        self.com.write_long(self.base_addr+32, Kd)
+        self.com.write_long(self.base_addr+34, Kd)
 
     def get_DEC_Kp(self):
-        return self.com.read_long(self.base_addr+26)
-    def get_DEC_Kv(self):
         return self.com.read_long(self.base_addr+28)
-    def get_DEC_Ki(self):
+    def get_DEC_Kv(self):
         return self.com.read_long(self.base_addr+30)
-    def get_DEC_Kd(self):
+    def get_DEC_Ki(self):
         return self.com.read_long(self.base_addr+32)
+    def get_DEC_Kd(self):
+        return self.com.read_long(self.base_addr+34)
 
-    def enable_temperature(self, enable:bool):
-        return self.com.write_register(self.base_addr+35, int(enable))
-    
+    def set_temperature_threshold(self, temperature_th:float):
+        return self.com.write_float(self.base_addr+37, temperature_th)
+
+    def set_voltage_threshold_min(self, voltage_th:float):
+        return self.com.write_float(self.base_addr+41, voltage_th)
+
+    def set_voltage_threshold_max(self, voltage_th:float):
+        return self.com.write_float(self.base_addr+43, voltage_th)
+
+    def get_voltage_threshold_min(self):
+        return self.com.read_float(self.base_addr+41)
+
+    def get_voltage_threshold_max(self):
+        return self.com.read_float(self.base_addr+43)
+
     def reverse_direction(self, enable:bool):
-        return self.com.write_register(self.base_addr+39, int(enable))
+        return self.com.write_register(self.base_addr+25, int(enable))
 
     def save_config(self):
         return self.com.write_register(self.base_addr+125, 1)
 
     def erase_configs(self):
         return self.com.write_register(self.base_addr+126, 1)
-    
+
     def reboot(self):
         return self.com.write_register(self.base_addr+127, 1)
-    
+
     def show_info(self):
-        print("-----motor info-----")
+        print(f"-----{self.name} info-----")
+        print(f"node_id={self.get_node_id()}")
         print(f"reverse_direction={self.get_reverse_direction()}")
         print(f"temp={self.get_temperature()}")
         print(f"voltage={self.get_voltage()}")
+        print(f"voltage_th_min={self.get_voltage_threshold_min()}")
+        print(f"voltage_th_max={self.get_voltage_threshold_max()}")
         print(f"foc current={self.get_FocCurrent()}")
         print(f"position={self.get_position()}")
         print(f"velocity={self.get_velocity()}")
-        print(f"homeoffset={self.get_HomeOffset()}")
         print(f"DEC_Kp={self.get_DEC_Kp()}")
         print(f"DEC_Kv={self.get_DEC_Kv()}")
         print(f"DEC_Ki={self.get_DEC_Ki()}")
         print(f"DEC_Kd={self.get_DEC_Kd()}")
-        print("-----end-----")
+        print(f"-----{self.name} info end-----")
 
 
-class LeadScrew(Motor):
+class LeadScrew(StepperMotor):
 
-    def __init__(self, com: RS485, screw_d:float):
+    def __init__(self, com: RS485, screw_d:float, name:str=""):
         """
         screw_d: 丝杆导程 (mm)
         """
-        super().__init__(com)
+        super().__init__(com, name)
         self.screw_d=screw_d
-        self.show_info()
         self.set_rated_current(0.5)
         self.set_rated_velocity(40)
-        self.set_rated_acceleration(200)
+        self.set_rated_acceleration(60)
 
-    def set_distance(self, distance: float, speed: int):
+    def set_distance_with_velocity(self, distance: float, speed: int):
         """
         distance: 绝对距离(mm)
         speed: 速度(mm/s)
         """
         p = distance / self.screw_d
         self.set_position_with_velocity(p, speed / self.screw_d)
-    
+
+    def set_distance_with_time(self, distance: float, time: float):
+        """
+        distance: 绝对距离(mm)
+        time: 时间(s)
+        """
+        p = distance / self.screw_d
+        self.set_position_with_time(p, time)
+
     def get_distance(self)->float:
         """
         返回: 绝对距离(mm)
@@ -258,6 +278,8 @@ class LeadScrew(Motor):
         """
         self.enable_motor(True)
         time.sleep(0.1)
+        current = self.get_rated_current()
+        print(f"current = {current}")
         self.set_rated_current(0.4)
         self.set_velocity(3.0 if dir else -3.0)
         while abs(self.get_velocity())>1.0:
@@ -266,6 +288,9 @@ class LeadScrew(Motor):
         time.sleep(0.5)
         self.set_home_position()
         time.sleep(0.5)
+        self.set_rated_current(current)
+
+
 
 
 def test_leadscrew(com):
@@ -276,15 +301,14 @@ def test_leadscrew(com):
 
     try:
         while True:
-            r = motor.set_distance(2, 10)
+            r = motor.set_distance_with_velocity(2, 10)
             print(motor.get_distance())
             time.sleep(0.8)
-            r = motor.set_distance(0, 10)
+            r = motor.set_distance_with_velocity(0, 10)
             print(motor.get_distance())
             time.sleep(0.8)
     except KeyboardInterrupt as e:
         motor.enable_motor(False)
-        motor.enable_temperature(False)
 
 def rw_test():
     d = RS485(1)
@@ -310,9 +334,9 @@ if __name__ == "__main__":
 
     d = RS485(ser, 1)
     d.connect()
-    test_leadscrew(d)
-    exit()
-    motor = Motor(d)
+    # test_leadscrew(d)
+    # exit()
+    motor = StepperMotor(d)
 
     # d42 = RS485(ser, 1)
     # d42.connect()
@@ -367,6 +391,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt as e:
         motor.enable_motor(False)
         # motor42.enable_motor(False)
-        motor.enable_temperature(False)
 
     d.disconnect()

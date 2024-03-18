@@ -302,6 +302,8 @@ void Motor::CloseLoopControlTick()
     /******************************** Update State ********************************/
     if (!encoder->IsCalibrated())
         controller->state = STATE_NO_CALIB;
+    else if (controller->state > STATE_NO_CALIB) // Other alert states
+    {}
     else if (controller->modeRunning == MODE_STOP)
         controller->state = STATE_STOP;
     else if (controller->isStalled)

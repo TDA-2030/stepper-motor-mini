@@ -66,7 +66,10 @@ public:
         STATE_RUNNING,
         STATE_OVERLOAD,
         STATE_STALL,
-        STATE_NO_CALIB
+        STATE_NO_CALIB, // Any state below this state must be shut down
+        STATE_OVERTEMP,
+        STATE_UNDERVOLTAGE,
+        STATE_OVERVOLTAGE
     } State_t;
 
 

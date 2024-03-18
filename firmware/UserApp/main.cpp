@@ -83,6 +83,9 @@ extern "C" void Main()
             .dce_kd = 250,
 #endif
             .motor_temperature = 0.0,
+            .motor_temperature_threshold = 55,
+            .motor_voltage_threshold_min = 10.5,
+            .motor_voltage_threshold_max = 24.8,
             .enableMotorOnBoot = false,
             .enableStallProtect = false,
             .enableTempWatch = false,
@@ -169,11 +172,24 @@ extern "C" void Tim1Callback100Hz()
     button2.Tick(10);
     statusLed.Tick(10, motor.controller->state);
     //1s period to collect a temperature data
-
     count ++;
+    if (0 == (count % 2)) {
+        if (boardConfig.motor_voltage < boardConfig.motor_voltage_threshold_min) {
+            motor.controller->requestMode = Motor::MODE_STOP;
+            motor.controller->state = Motor::STATE_UNDERVOLTAGE;
+        }
+        if (boardConfig.motor_voltage > boardConfig.motor_voltage_threshold_max) {
+            motor.controller->requestMode = Motor::MODE_STOP;
+            motor.controller->state = Motor::STATE_OVERVOLTAGE;
+        }
+    }
     if ( count >= 100) {
         boardConfig.motor_temperature = AdcGetChipTemperature();
         boardConfig.motor_voltage = AdcGetVoltage();
+        if (boardConfig.motor_temperature > boardConfig.motor_temperature_threshold) {
+            motor.controller->requestMode = Motor::MODE_STOP;
+            motor.controller->state = Motor::STATE_OVERTEMP;
+        }
         count = 0;
     }
     if (boardConfig.enableTempWatch) {

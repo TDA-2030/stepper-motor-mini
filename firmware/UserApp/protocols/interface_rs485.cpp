@@ -61,7 +61,7 @@ static void read_reg(uint16_t iRegIndex)
 #define _DATA (&usRegHoldingBuf[iRegIndex])
     switch (iRegIndex) {
     case 0x01:
-        // usRegHoldingBuf[iRegIndex] = motor.controller->requestMode;
+        usRegHoldingBuf[iRegIndex] = motor.controller->requestMode;
         break;
     case 0x02:
         usRegHoldingBuf[iRegIndex] = motor.encoder->angleData.rectifyValid;
@@ -87,35 +87,41 @@ static void read_reg(uint16_t iRegIndex)
     case 22: // Acceleration-Limit
         float_2u8((float)motor.config.motionParams.ratedVelocityAcc / (float)motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS, (uint8_t *)_DATA);
         break;
-    case 24: // Apply Home-Position
-        float_2u8(motor.config.motionParams.encoderHomeOffset / (float)motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS, (uint8_t *)_DATA);
+    // case 24: // Apply Home-Position
+    //     float_2u8(motor.config.motionParams.encoderHomeOffset / (float)motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS, (uint8_t *)_DATA);
+    //     break;
+    case 25: // reverse_direction
+        usRegHoldingBuf[iRegIndex] = boardConfig.reverse_direction;
         break;
-    case 25: // Auto-Enable
+    case 26: // Auto-Enable
         usRegHoldingBuf[iRegIndex] = boardConfig.enableMotorOnBoot;
         break;
-    case 26: // DCE Kp
+    case 28: // DCE Kp
         int32_2u8(motor.config.ctrlParams.dce.kp, (uint8_t *)_DATA);
         break;
-    case 28: // DCE Kv
+    case 30: // DCE Kv
         int32_2u8(motor.config.ctrlParams.dce.kv, (uint8_t *)_DATA);
         break;
-    case 30: // DCE Ki
+    case 32: // DCE Ki
         int32_2u8(motor.config.ctrlParams.dce.ki, (uint8_t *)_DATA);
         break;
-    case 32: // DCE Kd
+    case 34: // DCE Kd
         int32_2u8(motor.config.ctrlParams.dce.kd, (uint8_t *)_DATA);
         break;
-    case 34: // Enable Stall-Protect
+    case 36: // Enable Stall-Protect
         usRegHoldingBuf[iRegIndex] = motor.config.ctrlParams.stallProtectSwitch;
         break;
-    case 35: // temperature
+    case 37: // temperature
         float_2u8(boardConfig.motor_temperature, (uint8_t *)_DATA);
         break;
-    case 37: // voltage
+    case 39: // voltage
         float_2u8(boardConfig.motor_voltage, (uint8_t *)_DATA);
         break;
-    case 39: // reverse_direction
-        usRegHoldingBuf[iRegIndex] = boardConfig.reverse_direction;
+    case 41: // minimum voltage threshold
+        float_2u8(boardConfig.motor_voltage_threshold_min, (uint8_t *)_DATA);
+        break;
+    case 43: // maximum voltage threshold
+        float_2u8(boardConfig.motor_voltage_threshold_max, (uint8_t *)_DATA);
         break;
 
     default:
@@ -206,37 +212,41 @@ static void write_reg(uint16_t iRegIndex)
                                         motor.MOTOR_ONE_CIRCLE_SUBDIVIDE_STEPS;
         boardConfig.configStatus = CONFIG_COMMIT;
         break;
-    case 25: // Auto-Enable
+    case 25: // reverse_direction
+        boardConfig.reverse_direction = (usRegHoldingBuf[iRegIndex] == 1);
+        break;
+    case 26: // Auto-Enable
         boardConfig.enableMotorOnBoot = (usRegHoldingBuf[iRegIndex] == 1);
         break;
-    case 26: // DCE Kp
+    
+    case 28: // DCE Kp
         motor.config.ctrlParams.dce.kp = *(int32_t *) (_DATA);
         boardConfig.dce_kp = motor.config.ctrlParams.dce.kp;
         break;
-    case 28: // DCE Kv
+    case 30: // DCE Kv
         motor.config.ctrlParams.dce.kv = *(int32_t *) (_DATA);
         boardConfig.dce_kv = motor.config.ctrlParams.dce.kv;
         break;
-    case 30: // DCE Ki
+    case 32: // DCE Ki
         motor.config.ctrlParams.dce.ki = *(int32_t *) (_DATA);
         boardConfig.dce_ki = motor.config.ctrlParams.dce.ki;
         break;
-    case 32: // DCE Kd
+    case 34: // DCE Kd
         motor.config.ctrlParams.dce.kd = *(int32_t *) (_DATA);
         boardConfig.dce_kd = motor.config.ctrlParams.dce.kd;
         break;
-    case 34: // Enable Stall-Protect
+    case 36: // Enable Stall-Protect
         motor.config.ctrlParams.stallProtectSwitch = (usRegHoldingBuf[iRegIndex] == 1);
         boardConfig.enableStallProtect = motor.config.ctrlParams.stallProtectSwitch;
         break;
-    case 35: // temperature
-        boardConfig.motor_temperature_threhold = *(float *) (_DATA);
+    case 37: // temperature threshold
+        boardConfig.motor_temperature_threshold = *(float *) (_DATA);
         break;
-    case 37: // voltage
-        boardConfig.motor_voltage_threhold = *(float *) (_DATA);
+    case 41: // minimum voltage threshold
+        boardConfig.motor_voltage_threshold_min = *(float *) (_DATA);
         break;
-    case 39: // reverse_direction
-        boardConfig.reverse_direction = (usRegHoldingBuf[iRegIndex] == 1);
+    case 43: // maximum voltage threshold
+        boardConfig.motor_voltage_threshold_max = *(float *) (_DATA);
         break;
 
     case REG_HOLDING_NREGS-3: // config commit

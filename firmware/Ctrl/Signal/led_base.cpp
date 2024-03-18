@@ -32,6 +32,9 @@ void LedBase::Tick(uint32_t _timeElapseMillis, Motor::State_t _state)
             targetBlinkNum = 0;
             break;
         case Motor::STATE_OVERLOAD:
+        case Motor::STATE_OVERVOLTAGE:
+        case Motor::STATE_UNDERVOLTAGE:
+        case Motor::STATE_OVERTEMP:
             motorEnable = true;
             heartBeatEnable = false;
             targetBlinkNum = 3;
